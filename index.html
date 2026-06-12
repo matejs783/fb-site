@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.0</h2>
+<h2>verze 1.1</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -95,7 +95,14 @@ async function loadDay(){
 
 // DOCHÁZKA
 function renderAttendance(data){
-    console.log("RENDER attendance fired");
+    console.log("renderAttendance START");
+
+    const table = document.getElementById("attendance");
+
+    if (!table) {
+        console.error("TABLE NOT FOUND");
+        return;
+    }
 
     let html = "<tr><th>Hráč</th><th>Přišel</th></tr>";
 
@@ -103,8 +110,11 @@ function renderAttendance(data){
         html += "<tr><td>" + names[i] + "</td><td><input type='checkbox'></td></tr>";
     }
 
-    document.getElementById("attendance").innerHTML = html;
+    table.innerHTML = html;
+
+    console.log("renderAttendance DONE");
 }
+
 
 // GÓLY
 function renderGoals(data){
