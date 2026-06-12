@@ -5,38 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🏒 Florbal Stats</title>
 
-<!-- ✅ Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
-<!-- ✅ Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
     font-family: Arial;
-    background: linear-gradient(135deg, #0f2027, #2c5364);
-    color: white;
-    margin: 0;
-    text-align: center;
+    background: linear-gradient(135deg,#0f2027,#2c5364);
+    color:white;
+    text-align:center;
 }
 .card {
-    background: white;
-    color: #333;
-    margin: 20px;
-    padding: 20px;
-    border-radius: 12px;
+    background:white;
+    color:#333;
+    margin:20px;
+    padding:20px;
+    border-radius:12px;
 }
-button {
-    padding: 8px 12px;
-    margin: 5px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
+table {
+    width:100%;
 }
-.plus { background: green; color: white; }
-.logout { background:red; color:white; }
+td {
+    padding:8px;
+}
+button { padding:5px 10px; }
+.plus { background:green; color:white; }
 </style>
 </head>
 
@@ -50,16 +45,18 @@ button {
 
 <div id="app" style="display:none;">
 
-<button class="logout" onclick="logout()">Odhlásit</button>
-
 <div class="card">
-    <h3>Vyber datum</h3>
     <input type="date" id="date" onchange="loadDay()">
 </div>
 
 <div class="card">
-    <h3>Hráči</h3>
-    <div id="players"></div>
+    <h3>Docházka</h3>
+    <table id="attendance"></table>
+</div>
+
+<div class="card">
+    <h3>Góly</h3>
+    <table id="goals"></table>
 </div>
 
 <div class="card">
@@ -89,33 +86,30 @@ const firebaseConfig = {
 
 
 firebase.initializeApp(firebaseConfig);
-
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// hráči
 const names = ["jmeno1","jmeno2","jmeno3","jmeno4","jmeno5"];
 
-// ===== LOGIN =====
+// LOGIN
 function login(){
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider);
-}
-
-function logout(){
-    auth.signOut();
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 }
 
 auth.onAuthStateChanged(user=>{
     if(user){
         document.getElementById("login").style.display="none";
         document.getElementById("app").style.display="block";
+        renderEmptyTables();
         loadLeaderboard();
-    } else {
-        document.getElementById("login").style.display="block";
-        document.getElementById("app").style.display="none";
     }
 });
+
+// ===== RENDER EMPTY TABLES =====
+function renderEmptyTables(){
+    renderAttendance({});
+    renderGoals({});
+}
 
 // ===== LOAD DAY =====
 async function loadDay(){
@@ -125,64 +119,89 @@ async function loadDay(){
     const doc = await db.collection("matches").doc(date).get();
     const data = doc.exists ? doc.data() : {};
 
-    renderPlayers(date, data);
+    renderAttendance(data);
+    renderGoals(data);
 }
 
-// ===== RENDER PLAYERS =====
-function renderPlayers(date, data){
-    let html = "";
+// ===== DOCHÁZKA =====
+function renderAttendance(data){
+    let html = "<tr><th>Hráč</th><th>Přišel</th></tr>";
 
     names.forEach(n=>{
-        const player = data[n] || {goals:0, played:false};
+        const p = data[n] || {played:false};
 
         html += `
-        <div>
-            <input type="checkbox" ${player.played ? "checked":""}
-                onchange="togglePlayed('${date}','${n}')">
-            <b>${n}</b>
-            <button class="plus" onclick="addGoal('${date}','${n}')">+ gól</button>
-            ${player.goals}
-        </div>`;
+        <tr>
+            <td>${n}</td>
+            <td>
+                <input type="checkbox" ${p.played ? "checked":""}
+                onchange="togglePlayed('${n}')">
+            </td>
+        </tr>`;
     });
 
-    document.getElementById("players").innerHTML = html;
+    document.getElementById("attendance").innerHTML = html;
 }
 
-// ===== UPDATE PLAYER =====
-async function updatePlayer(date, name, update){
+// ===== GÓLY =====
+function renderGoals(data){
+    let html = "<tr><th>Hráč</th><th>Góly</th><th>Akce</th></tr>";
+
+    names.forEach(n=>{
+        const p = data[n] || {goals:0};
+
+        html += `
+        <tr>
+            <td>${n}</td>
+            <td>${p.goals || 0}</td>
+            <td>
+                <button class="plus" onclick="addGoal('${n}')">+1</button>
+            </td>
+        </tr>`;
+    });
+
+    document.getElementById("goals").innerHTML = html;
+}
+
+// ===== SAVE PLAYER =====
+async function savePlayer(name, newData){
+    const date = document.getElementById("date").value;
+    if(!date) return alert("Vyber datum");
+
     const ref = db.collection("matches").doc(date);
 
     await ref.set({
-        [name]: update
+        [name]: newData
     }, { merge:true });
+
+    loadDay();
+    loadLeaderboard();
 }
 
-// ===== TOGGLE PLAYED =====
-async function togglePlayed(date, name){
+// ===== TOGGLE =====
+async function togglePlayed(name){
+    const date = document.getElementById("date").value;
     const doc = await db.collection("matches").doc(date).get();
+
     const current = doc.data()?.[name] || {goals:0, played:false};
 
-    await updatePlayer(date, name, {
+    savePlayer(name, {
         goals: current.goals,
         played: !current.played
     });
-
-    loadDay();
-    loadLeaderboard();
 }
 
-// ===== ADD GOAL =====
-async function addGoal(date, name){
+// ===== GOALS =====
+async function addGoal(name){
+    const date = document.getElementById("date").value;
     const doc = await db.collection("matches").doc(date).get();
+
     const current = doc.data()?.[name] || {goals:0, played:true};
 
-    await updatePlayer(date, name, {
+    savePlayer(name, {
         goals: current.goals + 1,
         played: true
     });
-
-    loadDay();
-    loadLeaderboard();
 }
 
 // ===== LEADERBOARD =====
@@ -198,10 +217,10 @@ async function loadLeaderboard(){
     });
 
     snapshot.forEach(doc=>{
-        const data = doc.data();
+        const d = doc.data();
 
         names.forEach(n=>{
-            const p = data[n];
+            const p = d[n];
             if(p?.played){
                 matches[n]++;
                 totals[n]+=p.goals || 0;
@@ -211,7 +230,7 @@ async function loadLeaderboard(){
 
     let sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
 
-    let html = "";
+    let html="";
     sorted.forEach(([n,v])=>{
         let avg = matches[n] ? (v/matches[n]).toFixed(2) : 0;
         html += `${n}: ${v} gólů | průměr ${avg}<br>`;
@@ -219,9 +238,10 @@ async function loadLeaderboard(){
 
     document.getElementById("leaderboard").innerHTML = html;
 
-    select.innerHTML = "";
+    const select = document.getElementById("playerSelect");
+    select.innerHTML="";
     sorted.forEach(([n])=>{
-        select.innerHTML+=`<option value="${n}">${n}</option>`;
+        select.innerHTML+=`<option>${n}</option>`;
     });
 }
 
@@ -232,25 +252,23 @@ async function renderChart(){
     const player = document.getElementById("playerSelect").value;
     const snapshot = await db.collection("matches").get();
 
-    let labels = [];
-    let values = [];
+    let labels=[];
+    let values=[];
 
     snapshot.forEach(doc=>{
-        const data = doc.data();
         labels.push(doc.id);
-        values.push(data[player]?.goals || 0);
+        values.push(doc.data()[player]?.goals || 0);
     });
 
     if(chart) chart.destroy();
 
     chart = new Chart(document.getElementById("chart"), {
-        type: "line",
-        data: {
-            labels,
-            datasets: [{
-                label: player + " - góly",
-                data: values,
-                borderWidth: 2
+        type:"line",
+        data:{
+            labels:labels,
+            datasets:[{
+                label:player,
+                data:values
             }]
         }
     });
