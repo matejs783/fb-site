@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.92</h2>
+<h2>verze 1.93</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -133,7 +133,7 @@ function renderAttendance(data){
 function renderGoals(data){
     const table = document.getElementById("goals");
 
-    let html = "<tr><th>Hráč</th><th>Góly</th><th></th></tr>";
+    let html = "<tr><th>Hráč</th><th>Góly</th></tr>";
 
     names.forEach(name => {
         const p = data[name];
@@ -142,10 +142,10 @@ function renderGoals(data){
             html += `
             <tr>
                 <td>${name}</td>
-                <td>${p.goals || 0}</td>
                 <td>
-                    <button style="background:green;color:white;" onclick="addGoal('${name}')">+1</button>
-                    <button style="background:red;color:white;" onclick="removeGoal('${name}')">-1</button>
+                    <button style="background:red;color:white;" onclick="removeGoal('${name}')">-</button>
+                    ${p.goals || 0}
+                    <button style="background:green;color:white;" onclick="addGoal('${name}')">+</button>
                 </td>
             </tr>`;
         }
