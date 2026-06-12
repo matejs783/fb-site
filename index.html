@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Florbal Stats</title>
-
+<link rel="icon" href="https://banner2.cleanpng.com/20180719/qfl/d143316127b975cd8a274f9698e32d03.webp" type="image/png">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.7</h2>
+<h2>verze 1.8</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -33,16 +33,16 @@ button { padding:5px 10px; }
 </div>
 
 <div class="card">
-    <h3>Docházka</h3>
+    <h3>📄 Docházka 📄</h3>
     <table id="attendance"></table>
 </div>
 
 <div class="card">
-    <h3>Góly</h3>
+    <h3>🥅 Góly 🥅</h3>
     <table id="goals"></table>
 </div>
 <div class="card">
-    <h3>Leaderboard docházky</h3>
+    <h3>🏆 Leaderboard docházky 🏆</h3>
     <select id="yearSelect" onchange="loadLeaderboard()">
         <option value="2026">2026</option>
         <option value="2027">2027</option>
@@ -51,7 +51,7 @@ button { padding:5px 10px; }
 </div>
 
 <div class="card">
-    <h3>Graf gólů</h3>
+    <h3>📈 Graf gólů 📈</h3>
     <select id="playerSelect" onchange="drawChart()"></select>
     <canvas id="chart" width="400" height="200"></canvas>
 </div>
@@ -71,7 +71,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-const names = ["jmeno1","jmeno2","jmeno3","jmeno4","jmeno5"];
+const names = ["Dan Mikeš","Dan Hakulín","Radim Hladík","Michal Špinka","Jakub Myšák","Vojta Lakomý","Tonda Lakomý","Matěj Svobodník","Jonáš Březina","Dan Horyna","Tim Poláček","Adam Hošek"];
 
 // LOGIN
 function login(){
