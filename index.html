@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.2</h2>
+<h2>verze 1.3</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -172,14 +172,17 @@ async function addGoal(name){
     const doc = await ref.get();
 
     const data = doc.exists ? doc.data() : {};
+    
+    // Načteme stará data hráče, nebo vytvoříme základní strukturu
     const current = data[name] || { goals: 0, played: true };
 
+    // Uložíme data POD JMÉNEM HRÁČE s využitím [name]
     await ref.set({
-        {
+        [name]: {
             goals: current.goals + 1,
             played: true
         }
-    }, { merge:true });
+    }, { merge: true });
 
     loadDay();
 }
