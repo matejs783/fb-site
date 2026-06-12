@@ -1,12 +1,246 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <title>Facebook portal</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏒 Florbal Stats</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: Arial;
+    background: linear-gradient(135deg, #0f2027, #2c5364);
+    color: white;
+    margin: 0;
+    text-align: center;
+}
+.card {
+    background: white;
+    color: #333;
+    margin: 20px;
+    padding: 20px;
+    border-radius: 10px;
+}
+button {
+    padding: 8px 12px;
+    margin: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.plus { background: green; color: white; }
+</style>
 </head>
+
 <body>
-    <h1>FB stránka</h1>
-    <p>Toto je veřejná stránka na fb.mujnas.uk</p>
+
+<h1>🏒 Florbal Stats</h1>
+
+<div id="login">
+    <button onclick="login()">Přihlásit přes Google</button>
+</div>
+
+<div id="app" style="display:none;">
+
+<div class="card">
+    <h3>Vyber datum</h3>
+    <input type="date" id="date" onchange="loadDay()">
+</div>
+
+<div class="card">
+    <h3>Hráči</h3>
+    <div id="players"></div>
+</div>
+
+<div class="card">
+    <h3>Leaderboard</h3>
+    <div id="leaderboard"></div>
+</div>
+
+<div class="card">
+    <h3>Graf hráče</h3>
+    <select id="playerSelect" onchange="renderChart()"></select>
+    <canvas id="chart"></canvas>
+</div>
+
+</div>
+
+<script>
+
+// 🔴 SEM VLOŽ TVŮJ FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
+  authDomain: "florbal-cf3a3.firebaseapp.com",
+  projectId: "florbal-cf3a3",
+  storageBucket: "florbal-cf3a3.firebasestorage.app",
+  messagingSenderId: "931228433806",
+  appId: "1:931228433806:web:f837c3e0c11ae747e778df"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let user;
+
+// ===== LOGIN =====
+function login(){
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider);
+}
+
+auth.onAuthStateChanged(u=>{
+    if(u){
+        user = u;
+
+        document.getElementById("login").style.display="none";
+        document.getElementById("app").style.display="block";
+
+        loadLeaderboard();
+    }
+});
+
+// ===== DATA =====
+const names = ["jmeno1","jmeno2","jmeno3","jmeno4","jmeno5"];
+
+// ===== LOAD DAY =====
+async function loadDay(){
+    const date = document.getElementById("date").value;
+    if(!date) return;
+
+    const ref = db.collection("matches").doc(date);
+    const doc = await ref.get();
+
+    let data = doc.exists ? doc.data() : {};
+
+    renderPlayers(date, data);
+}
+
+// ===== RENDER PLAYERS =====
+function renderPlayers(date, data){
+    let html = "";
+
+    names.forEach(n=>{
+        let goals = data[n]?.goals || 0;
+        let played = data[n]?.played || false;
+
+        html += `
+            <div>
+                <input type="checkbox" ${played ? "checked":""}
+                    onchange="togglePlayed('${date}','${n}')">
+                ${n}
+                <button class="plus" onclick="addGoal('${date}','${n}')">+ gól</button>
+                ${goals}
+            </div>
+        `;
+    });
+
+    document.getElementById("players").innerHTML = html;
+}
+
+// ===== TOGGLE PLAYED =====
+async function togglePlayed(date, name){
+    const ref = db.collection("matches").doc(date);
+
+    await ref.set({
+        [name]: { played: true }
+    }, { merge:true });
+
+    loadDay();
+    loadLeaderboard();
+}
+
+// ===== ADD GOAL =====
+async function addGoal(date, name){
+    const ref = db.collection("matches").doc(date);
+
+    await ref.set({
+        [name]: {
+            goals:}, { merge:true });
+
+    loadDay();
+    loadLeaderboard();
+}
+
+// ===== LEADERBOARD =====
+async function loadLeaderboard(){
+    const snapshot = await db.collection("matches").get();
+
+    let totals = {};
+    let matches = {};
+
+    names.forEach(n=>{
+        totals[n]=0;
+        matches[n]=0;
+    });
+
+    snapshot.forEach(doc=>{
+        let d = doc.data();
+
+        names.forEach(n=>{
+            if(d[n]?.played){
+                matches[n]++;
+                totals[n]+=d[n].goals || 0;
+            }
+        });
+    });
+
+    let sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+
+    let html = "";
+    sorted.forEach(([n,v])=>{
+        let avg = matches[n] ? (v/matches[n]).toFixed(2) : 0;
+        html += `${n}: ${v} gólů | průměr ${avg}<br>`;
+    });
+
+    document.getElementById("leaderboard").innerHTML = html;
+
+    // dropdown
+    let select = document.getElementById("playerSelect");
+    select.innerHTML="";
+    sorted.forEach(([n])=>{
+        select.innerHTML += `<option>${n}</option>`;
+    });
+}
+
+// ===== GRAF =====
+let chart;
+
+async function renderChart(){
+    const player = document.getElementById("playerSelect").value;
+    const snapshot = await db.collection("matches").get();
+
+    let labels = [];
+    let values = [];
+
+    snapshot.forEach(doc=>{
+        let d = doc.data();
+        labels.push(doc.id);
+        values.push(d[player]?.goals || 0);
+    });
+
+    if(chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("chart"), {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: player + " - góly",
+                data: values,
+                borderWidth: 2
+            }]
+        }
+    });
+}
+
+</script>
+
 </body>
 </html>
-`
