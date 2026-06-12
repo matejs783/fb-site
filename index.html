@@ -176,7 +176,7 @@ async function togglePlayed(name){
     const current = data[name] || {goals:0, played:false};
 
     await ref.set({
-        {
+        [name]: {
             goals: current.goals,
             played: !current.played
         }
