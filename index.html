@@ -72,6 +72,12 @@ auth.onAuthStateChanged(user=>{
     if(user){
         document.getElementById("login").style.display="none";
         document.getElementById("app").style.display="block";
+
+        // ✅ nastav dnešní datum + načti data
+        const today = new Date().toISOString().split("T")[0];
+        document.getElementById("date").value = today;
+
+        loadDay();
     }
 });
 
