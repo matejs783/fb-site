@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.4</h2>
+<h2>verze 1.5</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -45,13 +45,6 @@ button { padding:5px 10px; }
 </div>
 
 <script>
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
   authDomain: "florbal-cf3a3.firebaseapp.com",
@@ -60,11 +53,6 @@ const firebaseConfig = {
   messagingSenderId: "931228433806",
   appId: "1:931228433806:web:f837c3e0c11ae747e778df"
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
