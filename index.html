@@ -95,6 +95,12 @@ async function loadDay(){
 
 // DOCHÁZKA
 function renderAttendance(data){
+    const table = document.getElementById("attendance");
+    if(!table){
+        console.error("attendance table not found");
+        return;
+    }
+
     let html = "<tr><th>Hráč</th><th>Přišel</th></tr>";
 
     names.forEach(n=>{
@@ -103,16 +109,24 @@ function renderAttendance(data){
         html += `
         <tr>
             <td>${n}</td>
-            <td><input type="checkbox" ${p.played ? "checked":""}
-                onchange="togglePlayed('${n}')"></td>
+            <td>
+                <input type="checkbox" ${p.played ? "checked":""}
+                onchange="togglePlayed('${n}')">
+            </td>
         </tr>`;
     });
 
-    document.getElementById("attendance").innerHTML = html;
+    table.innerHTML = html;
 }
 
 // GÓLY
 function renderGoals(data){
+    const table = document.getElementById("goals");
+    if(!table){
+        console.error("goals table not found");
+        return;
+    }
+
     let html = "<tr><th>Hráč</th><th>Góly</th><th></th></tr>";
 
     names.forEach(n=>{
@@ -128,7 +142,7 @@ function renderGoals(data){
         }
     });
 
-    document.getElementById("goals").innerHTML = html;
+    table.innerHTML = html;
 }
 
 // TOGGLE
