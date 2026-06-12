@@ -102,17 +102,15 @@ auth.onAuthStateChanged(user=>{
 });
 
 // ===== LOAD DAY =====
-let currentData = {};
-
 async function loadDay(){
     const date = document.getElementById("date").value;
     if(!date) return;
 
     const doc = await db.collection("matches").doc(date).get();
-    currentData = doc.exists ? doc.data() : {};
+    const data = doc.exists ? doc.data() : {};
 
-    renderAttendance(currentData);
-    renderGoals(currentData);
+    renderAttendance(data);
+    renderGoals(data);
 }
 
 // ===== DOCHÁZKA =====
@@ -169,12 +167,20 @@ async function savePlayer(name, playerData){
 
 // ===== DOCHÁZKA =====
 async function togglePlayed(name){
-    const current = currentData[name] || {goals:0, played:false};
+    const date = document.getElementById("date").value;
 
-    await savePlayer(name, {
-        goals: current.goals || 0,
-        played: !current.played
-    });
+    const ref = db.collection("matches").doc(date);
+    const doc = await ref.get();
+
+    const data = doc.exists ? doc.data() : {};
+    const current = data[name] || {goals:0, played:false};
+
+    await ref.set({
+        {
+            goals: current.goals,
+            played: !current.played
+        }
+    }, { merge:true });
 
     loadDay();
     loadLeaderboard();
@@ -182,12 +188,20 @@ async function togglePlayed(name){
 
 // ===== GÓLY =====
 async function addGoal(name){
-    const current = currentData[name] || {goals:0, played:true};
+    const date = document.getElementById("date").value;
 
-    await savePlayer(name, {
-        goals: (current.goals || 0) + 1,
-        played: true
-    });
+    const ref = db.collection("matches").doc(date);
+    const doc = await ref.get();
+
+    const data = doc.exists ? doc.data() : {};
+    const current = data[name] || {goals:0, played:true};
+
+    await ref.set({
+        {
+            goals: current.goals + 1,
+            played: true
+        }
+    }, { merge:true });
 
     loadDay();
     loadLeaderboard();
