@@ -5,56 +5,451 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Florbal Stats</title>
 <link rel="icon" href="https://banner2.cleanpng.com/20180719/qfl/d143316127b975cd8a274f9698e32d03.webp" type="image/png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <style>
-body { font-family: Arial; background:#1e3c47; color:white; text-align:center;}
-.card { background:white; color:black; margin:15px; padding:15px; border-radius:10px;}
-table { width:100%; }
-td,th { padding:8px; }
-button { padding:5px 10px; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal-50: #E1F5EE;
+    --teal-100: #9FE1CB;
+    --teal-400: #1D9E75;
+    --teal-600: #0F6E56;
+    --teal-800: #085041;
+    --teal-900: #04342C;
+    --gray-100: #D3D1C7;
+    --gray-200: #B4B2A9;
+    --gray-800: #444441;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a1628;
+    color: #f0f4f8;
+    min-height: 100vh;
+    padding-bottom: 3rem;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0f2847 0%, #0f6e56 100%);
+    border-bottom: 1px solid rgba(29,158,117,0.3);
+    padding: 1.5rem 2rem;
+    text-align: center;
+    position: relative;
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  header h1 i { color: #1D9E75; font-size: 2rem; }
+  header .version {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.45);
+    margin-top: 4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* LOGIN */
+  #login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 100px);
+  }
+  .login-card {
+    background: #0f2847;
+    border: 1px solid rgba(29,158,117,0.25);
+    border-radius: 16px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    max-width: 360px;
+    width: 90%;
+  }
+  .login-card i { font-size: 3rem; color: #1D9E75; margin-bottom: 1rem; display: block; }
+  .login-card h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .login-card p { color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .btn-google {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #1D9E75;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-google:hover { background: #0F6E56; }
+  .btn-google:active { transform: scale(0.98); }
+
+  /* MAIN LAYOUT */
+  #app { display: none; max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* CARDS */
+  .card {
+    background: #0f2847;
+    border: 1px solid rgba(29,158,117,0.2);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(29,158,117,0.15);
+  }
+  .card-header i { color: #1D9E75; font-size: 1.25rem; }
+  .card-header h3 { font-size: 1rem; font-weight: 600; color: #e8f5f1; }
+  .card-header .badge {
+    margin-left: auto;
+    background: rgba(29,158,117,0.15);
+    color: #1D9E75;
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* CUSTOM CALENDAR */
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+  }
+  .cal-nav button {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(29,158,117,0.25);
+    border-radius: 7px;
+    color: #e8f5f1;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .cal-nav button:hover { background: rgba(29,158,117,0.2); }
+  .cal-nav .cal-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #e8f5f1;
+    letter-spacing: 0.3px;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-dow {
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.3);
+    padding-bottom: 6px;
+  }
+  .cal-day {
+    text-align: center;
+    padding: 5px 2px;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: rgba(255,255,255,0.65);
+    transition: background 0.12s, color 0.12s;
+    position: relative;
+    user-select: none;
+  }
+  .cal-day:hover { background: rgba(29,158,117,0.15); color: #e8f5f1; }
+  .cal-day.empty { cursor: default; }
+  .cal-day.empty:hover { background: transparent; }
+  .cal-day.has-data {
+    color: #9FE1CB;
+    font-weight: 600;
+  }
+  .cal-day.has-data::after {
+    content: '';
+    display: block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #1D9E75;
+    margin: 2px auto 0;
+  }
+  .cal-day.selected {
+    background: #1D9E75 !important;
+    color: white !important;
+    font-weight: 700;
+  }
+  .cal-day.selected::after { background: rgba(255,255,255,0.6); }
+  .cal-day.today-marker { border: 1px solid rgba(29,158,117,0.4); }
+  .cal-selected-label {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(29,158,117,0.15);
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cal-selected-label span { color: #9FE1CB; font-weight: 600; }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { border-bottom: 1px solid rgba(29,158,117,0.2); }
+  th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.35);
+    padding: 0 0.5rem 0.6rem;
+    text-align: left;
+  }
+  th:last-child { text-align: center; }
+  td {
+    padding: 0.55rem 0.5rem;
+    font-size: 0.9rem;
+    color: #dce9e4;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  tbody tr:hover { background: rgba(29,158,117,0.05); border-radius: 8px; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* PLAYER NAME WITH AVATAR */
+  .player-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(29,158,117,0.2);
+    border: 1px solid rgba(29,158,117,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #1D9E75;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  /* CHECKBOX */
+  input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(29,158,117,0.4);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+    display: block;
+    margin: auto;
+  }
+  input[type="checkbox"]:checked {
+    background: #1D9E75;
+    border-color: #1D9E75;
+  }
+  input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 4px; top: 1px;
+    width: 7px; height: 11px;
+    border: 2px solid white;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+  }
+
+  /* GOAL CONTROLS */
+  .goal-ctrl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .goal-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 7px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s, opacity 0.15s;
+    line-height: 1;
+  }
+  .goal-btn:active { transform: scale(0.9); }
+  .goal-btn.minus { background: rgba(226,75,74,0.18); color: #E24B4A; border: 1px solid rgba(226,75,74,0.3); }
+  .goal-btn.minus:hover { background: rgba(226,75,74,0.28); }
+  .goal-btn.plus  { background: rgba(29,158,117,0.18); color: #1D9E75; border: 1px solid rgba(29,158,117,0.35); }
+  .goal-btn.plus:hover  { background: rgba(29,158,117,0.28); }
+  .goal-count {
+    font-size: 1rem;
+    font-weight: 700;
+    min-width: 22px;
+    text-align: center;
+    color: #e8f5f1;
+  }
+
+  /* RANK BADGES */
+  .rank { font-weight: 700; font-size: 0.85rem; }
+  .rank-1 { color: #f5c842; }
+  .rank-2 { color: #b0b8c1; }
+  .rank-3 { color: #c87941; }
+
+  /* SELECT */
+  select {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 8px;
+    color: #e8f5f1;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.88rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+  select:hover, select:focus { border-color: #1D9E75; }
+
+  /* CANVAS */
+  #chart {
+    width: 100% !important;
+    max-width: 100%;
+    height: 180px !important;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    display: block;
+  }
+
+  /* LEADERBOARD SCORE PILL */
+  .score-pill {
+    display: inline-block;
+    background: rgba(29,158,117,0.15);
+    color: #1D9E75;
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 20px;
+    padding: 2px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
 </style>
 </head>
-
 <body>
 
-<h1>🏒 Florbal Stats</h1>
-<h2>verze 1.93</h2>
+<header>
+  <h1><i class="ti ti-ball-football" aria-hidden="true"></i> Florbal Stats</h1>
+  <div class="version">verze 1.93</div>
+</header>
+
 <div id="login">
-    <button onclick="login()">Přihlásit přes Google</button>
+  <div class="login-card">
+    <i class="ti ti-shield-check" aria-hidden="true"></i>
+    <h2>Florbal Stats</h2>
+    <p>Pro pokračování se přihlaste pomocí Google účtu.</p>
+    <button class="btn-google" onclick="login()">
+      <i class="ti ti-brand-google" aria-hidden="true"></i>
+      Přihlásit přes Google
+    </button>
+  </div>
 </div>
 
-<div id="app" style="display:none;">
+<div id="app">
 
-<div class="card">
-    <input type="date" id="date" onchange="loadDay()">
-</div>
+  <div class="card">
+    <div class="card-header">
+      <i class="ti ti-calendar" aria-hidden="true"></i>
+      <h3>Vyberte datum tréninku</h3>
+    </div>
+    <div class="cal-nav">
+      <button onclick="calPrev()" aria-label="Předchozí měsíc"><i class="ti ti-chevron-left"></i></button>
+      <span class="cal-title" id="calTitle"></span>
+      <button onclick="calNext()" aria-label="Další měsíc"><i class="ti ti-chevron-right"></i></button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-selected-label">
+      <i class="ti ti-calendar-event" style="font-size:14px" aria-hidden="true"></i>
+      Vybrané datum: <span id="calSelectedLabel">—</span>
+    </div>
+    <input type="hidden" id="date">
+  </div>
 
-<div class="card">
-    <h3>📄 Docházka 📄</h3>
-    <table id="attendance"></table>
-</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <i class="ti ti-users" aria-hidden="true"></i>
+        <h3>Docházka</h3>
+      </div>
+      <table id="attendance"></table>
+    </div>
 
-<div class="card">
-    <h3>🥅 Góly 🥅</h3>
-    <table id="goals"></table>
-</div>
-<div class="card">
-    <h3>🏆 Leaderboard docházky 🏆</h3>
-    <select id="yearSelect" onchange="loadLeaderboard()">
+    <div class="card">
+      <div class="card-header">
+        <i class="ti ti-ball-football" aria-hidden="true"></i>
+        <h3>Góly</h3>
+      </div>
+      <table id="goals"></table>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <i class="ti ti-trophy" aria-hidden="true"></i>
+        <h3>Leaderboard docházky</h3>
+      </div>
+      <select id="yearSelect" onchange="loadLeaderboard()">
         <option value="2026">2026</option>
         <option value="2027">2027</option>
-    </select>
-    <table id="leaderboard"></table>
-</div>
+      </select>
+      <table id="leaderboard"></table>
+    </div>
 
-<div class="card">
-    <h3>📈 Graf gólů 📈</h3>
-    <select id="playerSelect" onchange="drawChart()"></select>
-    <canvas id="chart" width="400" height="200"></canvas>
-</div>
+    <div class="card">
+      <div class="card-header">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i>
+        <h3>Graf gólů</h3>
+      </div>
+      <select id="playerSelect" onchange="drawChart()"></select>
+      <canvas id="chart" width="600" height="180"></canvas>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -67,215 +462,305 @@ const firebaseConfig = {
   appId: "1:931228433806:web:f837c3e0c11ae747e778df"
 };
 firebase.initializeApp(firebaseConfig);
-
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// CALENDAR STATE
+let calYear, calMonth, calSelected, calDatesWithData = new Set();
+
+const CZ_MONTHS = ["Leden","Únor","Březen","Duben","Květen","Červen","Červenec","Srpen","Září","Říjen","Listopad","Prosinec"];
+const CZ_DAYS = ["Po","Út","St","Čt","Pá","So","Ne"];
+
+function calInit(dateStr) {
+  const d = new Date(dateStr);
+  calYear = d.getFullYear();
+  calMonth = d.getMonth();
+  calSelected = dateStr;
+  renderCal();
+}
+
+function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCal(); }
+function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCal(); }
+
+function calSelectDay(dateStr) {
+  calSelected = dateStr;
+  document.getElementById("date").value = dateStr;
+  renderCal();
+  updateCalLabel();
+  loadDay();
+}
+
+function updateCalLabel() {
+  const el = document.getElementById("calSelectedLabel");
+  if(!calSelected){ el.textContent = "—"; return; }
+  const d = new Date(calSelected + "T00:00:00");
+  el.textContent = d.toLocaleDateString('cs-CZ', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+}
+
+function renderCal() {
+  document.getElementById("calTitle").textContent = CZ_MONTHS[calMonth] + " " + calYear;
+  const grid = document.getElementById("calGrid");
+  let html = CZ_DAYS.map(d => `<div class="cal-dow">${d}</div>`).join("");
+
+  const firstDay = new Date(calYear, calMonth, 1);
+  // Monday-based: 0=Mon..6=Sun
+  let startDow = firstDay.getDay(); // 0=Sun..6=Sat
+  startDow = (startDow + 6) % 7;   // convert to Mon=0
+
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
+  for(let i=0; i<startDow; i++) html += `<div class="cal-day empty"></div>`;
+
+  for(let d=1; d<=daysInMonth; d++){
+    const month = String(calMonth+1).padStart(2,'0');
+    const day = String(d).padStart(2,'0');
+    const dateStr = `${calYear}-${month}-${day}`;
+    let cls = "cal-day";
+    if(calDatesWithData.has(dateStr)) cls += " has-data";
+    if(dateStr === calSelected) cls += " selected";
+    if(dateStr === todayStr) cls += " today-marker";
+    html += `<div class="${cls}" onclick="calSelectDay('${dateStr}')">${d}</div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+async function loadDatesWithData() {
+  const snapshot = await db.collection("matches").get();
+  calDatesWithData = new Set();
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const hasAttendance = Object.values(data).some(p => p?.played);
+    if(hasAttendance) calDatesWithData.add(doc.id);
+  });
+  renderCal();
+}
+
 const names = ["Dan Mikeš","Dan Hakulín","Radim Hladík","Michal Špinka","Jakub Myšák","Vojta Lakomý","Tonda Lakomý","Matěj Svobodník","Jonáš Březina","Dan Horyna","Tim Poláček","Adam Hošek"];
 
-// LOGIN
-function login(){
-    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
 }
 
-auth.onAuthStateChanged(user=>{
-    if(user){
-        document.getElementById("login").style.display="none";
-        document.getElementById("app").style.display="block";
+function login(){
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+}
 
-        // ✅ nastav dnešní datum + načti data
-       const today = new Date().toLocaleDateString('en-CA');
-        document.getElementById("date").value = today;
-        initPlayers();
-        loadLeaderboard();
-        loadDay();
-        drawChart();
-    }
+auth.onAuthStateChanged(user => {
+  if(user){
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    const today = new Date().toLocaleDateString('en-CA');
+    document.getElementById("date").value = today;
+    calInit(today);
+    updateCalLabel();
+    initPlayers();
+    loadLeaderboard();
+    loadDatesWithData();
+    loadDay();
+    drawChart();
+  }
 });
 
-// LOAD
 async function loadDay(){
-    const date = document.getElementById("date").value;
-    if(!date) return;
-
-    const doc = await db.collection("matches").doc(date).get();
-    const data = doc.exists ? doc.data() : {};
-
-    renderAttendance(data);
-    renderGoals(data);
+  const date = document.getElementById("date").value;
+  if(!date) return;
+  const doc = await db.collection("matches").doc(date).get();
+  const data = doc.exists ? doc.data() : {};
+  renderAttendance(data);
+  renderGoals(data);
 }
 
-// DOCHÁZKA
 function renderAttendance(data){
-    const table = document.getElementById("attendance");
-
-    let html = "<tr><th>Hráč</th><th>Přišel</th></tr>";
-
-    names.forEach(name => {
-        const p = data[name] || { goals: 0, played: false };
-
-        html += `
-        <tr>
-            <td>${name}</td>
-            <td>
-                <input type="checkbox"
-                    ${p.played ? "checked" : ""}
-                    onchange="togglePlayed('${name}')">
-            </td>
-        </tr>`;
-    });
-
-    table.innerHTML = html;
+  const table = document.getElementById("attendance");
+  let html = `<thead><tr><th>Hráč</th><th style="text-align:center">Přišel</th></tr></thead><tbody>`;
+  names.forEach(name => {
+    const p = data[name] || { goals:0, played:false };
+    html += `<tr>
+      <td><div class="player-cell">
+        <div class="avatar">${initials(name)}</div>
+        ${name}
+      </div></td>
+      <td style="text-align:center">
+        <input type="checkbox" ${p.played ? "checked" : ""} onchange="togglePlayed('${name}')">
+      </td>
+    </tr>`;
+  });
+  html += `</tbody>`;
+  table.innerHTML = html;
 }
 
-
-// GÓLY
 function renderGoals(data){
-    const table = document.getElementById("goals");
-
-    let html = "<tr><th>Hráč</th><th>Góly</th></tr>";
-
-    names.forEach(name => {
-        const p = data[name];
-
-        if (p && p.played) {
-            html += `
-            <tr>
-                <td>${name}</td>
-                <td>
-                    <button style="background:red;color:white;" onclick="removeGoal('${name}')">-</button>
-                    ${p.goals || 0}
-                    <button style="background:green;color:white;" onclick="addGoal('${name}')">+</button>
-                </td>
-            </tr>`;
-        }
-    });
-
-    table.innerHTML = html;
+  const table = document.getElementById("goals");
+  let html = `<thead><tr><th>Hráč</th><th style="text-align:center">Góly</th></tr></thead><tbody>`;
+  let hasPlayers = false;
+  names.forEach(name => {
+    const p = data[name];
+    if(p && p.played){
+      hasPlayers = true;
+      html += `<tr>
+        <td><div class="player-cell">
+          <div class="avatar">${initials(name)}</div>
+          ${name}
+        </div></td>
+        <td>
+          <div class="goal-ctrl">
+            <button class="goal-btn minus" onclick="removeGoal('${name}')">−</button>
+            <span class="goal-count">${p.goals || 0}</span>
+            <button class="goal-btn plus" onclick="addGoal('${name}')">+</button>
+          </div>
+        </td>
+      </tr>`;
+    }
+  });
+  if(!hasPlayers){
+    html += `<tr><td colspan="2" style="text-align:center;color:rgba(255,255,255,0.3);padding:1.5rem;font-size:0.85rem;">Nejprve zaznačte docházku</td></tr>`;
+  }
+  html += `</tbody>`;
+  table.innerHTML = html;
 }
 
-// TOGGLE
 async function togglePlayed(name){
-    const date = document.getElementById("date").value;
-    if(!date) return;
-
-    const ref = db.collection("matches").doc(date);
-    const doc = await ref.get();
-
-    const data = doc.exists ? doc.data() : {};
-    const current = data[name] || {goals:0, played:false};
-
-    await ref.set({
-        [name]: {
-            goals: current.goals,
-            played: !current.played
-        }
-    }, { merge:true });
-
-    loadDay();
+  const date = document.getElementById("date").value;
+  if(!date) return;
+  const ref = db.collection("matches").doc(date);
+  const doc = await ref.get();
+  const data = doc.exists ? doc.data() : {};
+  const current = data[name] || {goals:0, played:false};
+  await ref.set({ [name]: { goals: current.goals, played: !current.played } }, {merge:true});
+  await loadDatesWithData();
+  loadDay();
 }
 
-// GÓL
 async function addGoal(name){
-    const date = document.getElementById("date").value;
-    if(!date) return;
-
-    const ref = db.collection("matches").doc(date);
-    const doc = await ref.get();
-
-    const data = doc.exists ? doc.data() : {};
-    
-    // Načteme stará data hráče, nebo vytvoříme základní strukturu
-    const current = data[name] || { goals: 0, played: true };
-
-    // Uložíme data POD JMÉNEM HRÁČE s využitím [name]
-    await ref.set({
-        [name]: {
-            goals: current.goals + 1,
-            played: true
-        }
-    }, { merge: true });
-
-    loadDay();
+  const date = document.getElementById("date").value;
+  if(!date) return;
+  const ref = db.collection("matches").doc(date);
+  const doc = await ref.get();
+  const data = doc.exists ? doc.data() : {};
+  const current = data[name] || {goals:0, played:true};
+  await ref.set({ [name]: { goals: current.goals+1, played:true } }, {merge:true});
+  loadDay();
 }
-//minus gol
+
 async function removeGoal(name){
-    const date = document.getElementById("date").value;
-    if(!date) return;
-
-    const ref = db.collection("matches").doc(date);
-    const doc = await ref.get();
-
-    const data = doc.exists ? doc.data() : {};
-    const current = data[name] || { goals: 0, played: true };
-
-    const newGoals = Math.max(0, current.goals - 1);
-
-    await ref.set({
-        [name]: {
-            goals: newGoals,
-            played: true
-        }
-    }, { merge: true });
-
-    loadDay();
+  const date = document.getElementById("date").value;
+  if(!date) return;
+  const ref = db.collection("matches").doc(date);
+  const doc = await ref.get();
+  const data = doc.exists ? doc.data() : {};
+  const current = data[name] || {goals:0, played:true};
+  await ref.set({ [name]: { goals: Math.max(0, current.goals-1), played:true } }, {merge:true});
+  loadDay();
 }
-// pro dropdown hracu
+
 function initPlayers(){
-    const sel = document.getElementById("playerSelect");
-    sel.innerHTML = names.map(n => `<option>${n}</option>`).join("");
-}    
-    //leaderboard
-    async function loadLeaderboard(){
-    const year = document.getElementById("yearSelect").value;
-    const snapshot = await db.collection("matches").get();
-
-    const stats = {};
-    names.forEach(n => stats[n] = 0);
-
-    snapshot.forEach(doc => {
-        if(doc.id.startsWith(year)){
-            const data = doc.data();
-
-            names.forEach(n => {
-                if(data[n]?.played){
-                    stats[n]++;
-                }
-            });
-        }
-    });
-
-    let html = "<tr><th>Hráč</th><th>Docházka</th></tr>";
-
-    Object.entries(stats)
-        .sort((a,b) => b[1] - a[1])
-        .forEach(([name,val]) => {
-            html += `<tr><td>${name}</td><td>${val}</td></tr>`;
-        });
-
-    document.getElementById("leaderboard").innerHTML = html;
+  const sel = document.getElementById("playerSelect");
+  sel.innerHTML = names.map(n => `<option>${n}</option>`).join("");
 }
-    //graf
-    async function drawChart(){
-    const player = document.getElementById("playerSelect").value;
-    const snapshot = await db.collection("matches").get();
 
-    const values = [];
+async function loadLeaderboard(){
+  const year = document.getElementById("yearSelect").value;
+  const snapshot = await db.collection("matches").get();
+  const stats = {};
+  names.forEach(n => stats[n] = 0);
+  snapshot.forEach(doc => {
+    if(doc.id.startsWith(year)){
+      const data = doc.data();
+      names.forEach(n => { if(data[n]?.played) stats[n]++; });
+    }
+  });
+  const sorted = Object.entries(stats).sort((a,b) => b[1]-a[1]);
+  let html = `<thead><tr><th>#</th><th>Hráč</th><th style="text-align:center">Docházka</th></tr></thead><tbody>`;
+  sorted.forEach(([name,val], i) => {
+    const rank = i+1;
+    const rankClass = rank<=3 ? `rank rank-${rank}` : '';
+    const rankLabel = rank<=3 ? ['🥇','🥈','🥉'][i] : rank;
+    html += `<tr>
+      <td><span class="${rankClass}">${rankLabel}</span></td>
+      <td><div class="player-cell">
+        <div class="avatar">${initials(name)}</div>
+        ${name}
+      </div></td>
+      <td style="text-align:center"><span class="score-pill">${val}</span></td>
+    </tr>`;
+  });
+  html += `</tbody>`;
+  document.getElementById("leaderboard").innerHTML = html;
+}
 
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        if(data[player]?.played){
-            values.push(data[player].goals || 0);
-        }
-    });
+async function drawChart(){
+  const player = document.getElementById("playerSelect").value;
+  const snapshot = await db.collection("matches").get();
+  const values = [];
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    if(data[player]?.played) values.push(data[player].goals || 0);
+  });
 
-    const ctx = document.getElementById("chart").getContext("2d");
-    ctx.clearRect(0, 0, 400, 200);
+  const canvas = document.getElementById("chart");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.offsetWidth || 560;
+  const H = 180;
+  canvas.width = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
 
-    values.forEach((v, i) => {
-        ctx.fillStyle = "green";
-        ctx.fillRect(i * 40, 200 - v * 10, 20, v * 10);
-    });
+  if(!values.length){
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.font = "14px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Žádná data", W/2, H/2);
+    return;
+  }
+
+  const maxVal = Math.max(...values, 1);
+  const padding = { top: 20, bottom: 30, left: 30, right: 10 };
+  const chartW = W - padding.left - padding.right;
+  const chartH = H - padding.top - padding.bottom;
+  const barW = Math.min(36, chartW / values.length - 6);
+  const gap = (chartW - barW * values.length) / Math.max(1, values.length - 1);
+
+  // grid lines
+  ctx.strokeStyle = "rgba(255,255,255,0.06)";
+  ctx.lineWidth = 1;
+  for(let i=0; i<=4; i++){
+    const y = padding.top + chartH - (chartH * i / 4);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(W - padding.right, y);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.25)";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(Math.round(maxVal * i / 4), padding.left - 4, y + 3);
+  }
+
+  values.forEach((v, i) => {
+    const barH = (v / maxVal) * chartH;
+    const x = padding.left + i * (barW + gap);
+    const y = padding.top + chartH - barH;
+
+    const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+    grad.addColorStop(0, "#1D9E75");
+    grad.addColorStop(1, "rgba(15,110,86,0.4)");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
+    ctx.fill();
+
+    if(v > 0){
+      ctx.fillStyle = "#9FE1CB";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(v, x + barW/2, y - 4);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.font = "9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(i+1, x + barW/2, H - 8);
+  });
 }
 </script>
 
