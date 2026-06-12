@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.91</h2>
+<h2>verze 1.92</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -144,7 +144,8 @@ function renderGoals(data){
                 <td>${name}</td>
                 <td>${p.goals || 0}</td>
                 <td>
-                    <button onclick="addGoal('${name}')">+1</button>
+                    <button style="background:green;color:white;" onclick="addGoal('${name}')">+1</button>
+                    <button style="background:red;color:white;" onclick="removeGoal('${name}')">-1</button>
                 </td>
             </tr>`;
         }
@@ -211,7 +212,7 @@ async function removeGoal(name){
     const newGoals = Math.max(0, current.goals - 1);
 
     await ref.set({
-        {
+        [name]: {
             goals: newGoals,
             played: true
         }
