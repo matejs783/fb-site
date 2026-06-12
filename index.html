@@ -85,8 +85,10 @@ auth.onAuthStateChanged(user=>{
         // ✅ nastav dnešní datum + načti data
        const today = new Date().toLocaleDateString('en-CA');
         document.getElementById("date").value = today;
-
+        initPlayers();
+        loadLeaderboard();
         loadDay();
+        drawChart();
     }
 });
 
@@ -194,7 +196,63 @@ async function addGoal(name){
 
     loadDay();
 }
+// pro dropdown hracu
+function initPlayers(){
+    const sel = document.getElementById("playerSelect");
+    sel.innerHTML = names.map(n => `<option>${n}</option>`).join("");
+}    
+    //leaderboard
+    async function loadLeaderboard(){
+    const year = document.getElementById("yearSelect").value;
+    const snapshot = await db.collection("matches").get();
 
+    const stats = {};
+    names.forEach(n => stats[n] = 0);
+
+    snapshot.forEach(doc => {
+        if(doc.id.startsWith(year)){
+            const data = doc.data();
+
+            names.forEach(n => {
+                if(data[n]?.played){
+                    stats[n]++;
+                }
+            });
+        }
+    });
+
+    let html = "<tr><th>Hráč</th><th>Docházka</th></tr>";
+
+    Object.entries(stats)
+        .sort((a,b) => b[1] - a[1])
+        .forEach(([name,val]) => {
+            html += `<tr><td>${name}</td><td>${val}</td></tr>`;
+        });
+
+    document.getElementById("leaderboard").innerHTML = html;
+}
+    //graf
+    async function drawChart(){
+    const player = document.getElementById("playerSelect").value;
+    const snapshot = await db.collection("matches").get();
+
+    const values = [];
+
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        if(data[player]?.played){
+            values.push(data[player].goals || 0);
+        }
+    });
+
+    const ctx = document.getElementById("chart").getContext("2d");
+    ctx.clearRect(0, 0, 400, 200);
+
+    values.forEach((v, i) => {
+        ctx.fillStyle = "green";
+        ctx.fillRect(i * 40, 200 - v * 10, 20, v * 10);
+    });
+}
 </script>
 
 </body>
