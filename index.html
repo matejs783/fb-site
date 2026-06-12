@@ -143,10 +143,9 @@ function renderGoals(data){
             <tr>
                 <td>${name}</td>
                 <td>${p.goals || 0}</td>
-<td>
-    <button style="background:green;color:white;" onclick="addGoal('${name}')">+1</button>
-    <button style="background:red;color:white;" onclick="removeGoal('${name}')">-1</button>
-</td>
+                <td>
+                    <button onclick="addGoal('${name}')">+1</button>
+                </td>
             </tr>`;
         }
     });
