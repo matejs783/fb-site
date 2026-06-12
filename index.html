@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🏒 Florbal Stats</title>
 
+<!-- ✅ Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+<!-- ✅ Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -24,7 +26,7 @@ body {
     color: #333;
     margin: 20px;
     padding: 20px;
-    border-radius: 10px;
+    border-radius: 12px;
 }
 button {
     padding: 8px 12px;
@@ -34,6 +36,7 @@ button {
     cursor: pointer;
 }
 .plus { background: green; color: white; }
+.logout { background:red; color:white; }
 </style>
 </head>
 
@@ -46,6 +49,8 @@ button {
 </div>
 
 <div id="app" style="display:none;">
+
+<button class="logout" onclick="logout()">Odhlásit</button>
 
 <div class="card">
     <h3>Vyber datum</h3>
@@ -72,7 +77,7 @@ button {
 
 <script>
 
-// 🔴 SEM VLOŽ TVŮJ FIREBASE CONFIG
+// 🔴 DOPLŇ
 const firebaseConfig = {
   apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
   authDomain: "florbal-cf3a3.firebaseapp.com",
@@ -82,12 +87,14 @@ const firebaseConfig = {
   appId: "1:931228433806:web:f837c3e0c11ae747e778df"
 };
 
+
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let user;
+// hráči
+const names = ["jmeno1","jmeno2","jmeno3","jmeno4","jmeno5"];
 
 // ===== LOGIN =====
 function login(){
@@ -95,29 +102,28 @@ function login(){
     auth.signInWithPopup(provider);
 }
 
-auth.onAuthStateChanged(u=>{
-    if(u){
-        user = u;
+function logout(){
+    auth.signOut();
+}
 
+auth.onAuthStateChanged(user=>{
+    if(user){
         document.getElementById("login").style.display="none";
         document.getElementById("app").style.display="block";
-
         loadLeaderboard();
+    } else {
+        document.getElementById("login").style.display="block";
+        document.getElementById("app").style.display="none";
     }
 });
-
-// ===== DATA =====
-const names = ["jmeno1","jmeno2","jmeno3","jmeno4","jmeno5"];
 
 // ===== LOAD DAY =====
 async function loadDay(){
     const date = document.getElementById("date").value;
     if(!date) return;
 
-    const ref = db.collection("matches").doc(date);
-    const doc = await ref.get();
-
-    let data = doc.exists ? doc.data() : {};
+    const doc = await db.collection("matches").doc(date).get();
+    const data = doc.exists ? doc.data() : {};
 
     renderPlayers(date, data);
 }
@@ -127,30 +133,39 @@ function renderPlayers(date, data){
     let html = "";
 
     names.forEach(n=>{
-        let goals = data[n]?.goals || 0;
-        let played = data[n]?.played || false;
+        const player = data[n] || {goals:0, played:false};
 
         html += `
-            <div>
-                <input type="checkbox" ${played ? "checked":""}
-                    onchange="togglePlayed('${date}','${n}')">
-                ${n}
-                <button class="plus" onclick="addGoal('${date}','${n}')">+ gól</button>
-                ${goals}
-            </div>
-        `;
+        <div>
+            <input type="checkbox" ${player.played ? "checked":""}
+                onchange="togglePlayed('${date}','${n}')">
+            <b>${n}</b>
+            <button class="plus" onclick="addGoal('${date}','${n}')">+ gól</button>
+            ${player.goals}
+        </div>`;
     });
 
     document.getElementById("players").innerHTML = html;
 }
 
-// ===== TOGGLE PLAYED =====
-async function togglePlayed(date, name){
+// ===== UPDATE PLAYER =====
+async function updatePlayer(date, name, update){
     const ref = db.collection("matches").doc(date);
 
     await ref.set({
-        [name]: { played: true }
+        [name]: update
     }, { merge:true });
+}
+
+// ===== TOGGLE PLAYED =====
+async function togglePlayed(date, name){
+    const doc = await db.collection("matches").doc(date).get();
+    const current = doc.data()?.[name] || {goals:0, played:false};
+
+    await updatePlayer(date, name, {
+        goals: current.goals,
+        played: !current.played
+    });
 
     loadDay();
     loadLeaderboard();
@@ -158,11 +173,13 @@ async function togglePlayed(date, name){
 
 // ===== ADD GOAL =====
 async function addGoal(date, name){
-    const ref = db.collection("matches").doc(date);
+    const doc = await db.collection("matches").doc(date).get();
+    const current = doc.data()?.[name] || {goals:0, played:true};
 
-    await ref.set({
-        [name]: {
-            goals:}, { merge:true });
+    await updatePlayer(date, name, {
+        goals: current.goals + 1,
+        played: true
+    });
 
     loadDay();
     loadLeaderboard();
@@ -181,12 +198,13 @@ async function loadLeaderboard(){
     });
 
     snapshot.forEach(doc=>{
-        let d = doc.data();
+        const data = doc.data();
 
         names.forEach(n=>{
-            if(d[n]?.played){
+            const p = data[n];
+            if(p?.played){
                 matches[n]++;
-                totals[n]+=d[n].goals || 0;
+                totals[n]+=p.goals || 0;
             }
         });
     });
@@ -201,11 +219,9 @@ async function loadLeaderboard(){
 
     document.getElementById("leaderboard").innerHTML = html;
 
-    // dropdown
-    let select = document.getElementById("playerSelect");
-    select.innerHTML="";
+    select.innerHTML = "";
     sorted.forEach(([n])=>{
-        select.innerHTML += `<option>${n}</option>`;
+        select.innerHTML+=`<option value="${n}">${n}</option>`;
     });
 }
 
@@ -220,9 +236,9 @@ async function renderChart(){
     let values = [];
 
     snapshot.forEach(doc=>{
-        let d = doc.data();
+        const data = doc.data();
         labels.push(doc.id);
-        values.push(d[player]?.goals || 0);
+        values.push(data[player]?.goals || 0);
     });
 
     if(chart) chart.destroy();
@@ -230,7 +246,7 @@ async function renderChart(){
     chart = new Chart(document.getElementById("chart"), {
         type: "line",
         data: {
-            labels: labels,
+            labels,
             datasets: [{
                 label: player + " - góly",
                 data: values,
