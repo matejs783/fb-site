@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.5</h2>
+<h2>verze 1.6</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -41,7 +41,19 @@ button { padding:5px 10px; }
     <h3>Góly</h3>
     <table id="goals"></table>
 </div>
+<div class="card">
+    <h3>Leaderboard docházky</h3>
+    <select id="yearSelect" onchange="loadLeaderboard()">
+        <option value="2026">2026</option>
+    </select>
+    <table id="leaderboard"></table>
+</div>
 
+<div class="card">
+    <h3>Graf gólů</h3>
+    <select id="playerSelect" onchange="drawChart()"></select>
+    <canvas id="chart" width="400" height="200"></canvas>
+</div>
 </div>
 
 <script>
