@@ -14,14 +14,18 @@ body { font-family: Arial; background:#1e3c47; color:white; text-align:center;}
 .card { background:white; color:black; margin:15px; padding:15px; border-radius:10px;}
 table { width:100%; }
 td,th { padding:8px; }
-button { padding:5px 10px; }
+button { padding:5px 10px; cursor:pointer; }
+
+.btn-plus { background:green; color:white; border:none; }
+.btn-minus { background:red; color:white; border:none; }
 </style>
 </head>
 
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.5</h2>
+<h2>verze 1.6</h2>
+
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -42,16 +46,27 @@ button { padding:5px 10px; }
     <table id="goals"></table>
 </div>
 
+<div class="card">
+    <h3>Leaderboard docházky</h3>
+    <select id="yearSelect" onchange="loadLeaderboard()">
+        <option value="2026">2026</option>
+    </select>
+    <table id="leaderboard"></table>
+</div>
+
+<div class="card">
+    <h3>Graf gólů</h3>
+    <select id="playerSelect" onchange="drawChart()"></select>
+    <canvas id="chart" width="400" height="200"></canvas>
+</div>
+
 </div>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
+  apiKey: "AIza...",
   authDomain: "florbal-cf3a3.firebaseapp.com",
-  projectId: "florbal-cf3a3",
-  storageBucket: "florbal-cf3a3.firebasestorage.app",
-  messagingSenderId: "931228433806",
-  appId: "1:931228433806:web:f837c3e0c11ae747e778df"
+  projectId: "florbal-cf3a3"
 };
 firebase.initializeApp(firebaseConfig);
 
@@ -70,13 +85,20 @@ auth.onAuthStateChanged(user=>{
         document.getElementById("login").style.display="none";
         document.getElementById("app").style.display="block";
 
-        // ✅ nastav dnešní datum + načti data
-       const today = new Date().toLocaleDateString('en-CA');
+        const today = new Date().toLocaleDateString('en-CA');
         document.getElementById("date").value = today;
 
+        initPlayers();
         loadDay();
+        loadLeaderboard();
     }
 });
+
+// INIT dropdown hráčů
+function initPlayers(){
+    const sel = document.getElementById("playerSelect");
+    sel.innerHTML = names.map(n=>`<option>${n}</option>`).join("");
+}
 
 // LOAD
 async function loadDay(){
@@ -96,8 +118,8 @@ function renderAttendance(data){
 
     let html = "<tr><th>Hráč</th><th>Přišel</th></tr>";
 
-    names.forEach(name => {
-        const p = data[name] || { goals: 0, played: false };
+    names.forEach(name=>{
+        const p = data[name] || { played: false };
 
         html += `
         <tr>
@@ -113,14 +135,13 @@ function renderAttendance(data){
     table.innerHTML = html;
 }
 
-
 // GÓLY
 function renderGoals(data){
     const table = document.getElementById("goals");
 
     let html = "<tr><th>Hráč</th><th>Góly</th><th></th></tr>";
 
-    names.forEach(name => {
+    names.forEach(name=>{
         const p = data[name];
 
         if (p && p.played) {
@@ -129,7 +150,8 @@ function renderGoals(data){
                 <td>${name}</td>
                 <td>${p.goals || 0}</td>
                 <td>
-                    <button onclick="addGoal('${name}')">+1</button>
+                    <button class="btn-plus" onclick="addGoal('${name}')">+1</button>
+                    <button class="btn-minus" onclick="removeGoal('${name}')">-1</button>
                 </td>
             </tr>`;
         }
@@ -141,8 +163,6 @@ function renderGoals(data){
 // TOGGLE
 async function togglePlayed(name){
     const date = document.getElementById("date").value;
-    if(!date) return;
-
     const ref = db.collection("matches").doc(date);
     const doc = await ref.get();
 
@@ -150,7 +170,7 @@ async function togglePlayed(name){
     const current = data[name] || {goals:0, played:false};
 
     await ref.set({
-        [name]: {
+        {
             goals: current.goals,
             played: !current.played
         }
@@ -159,22 +179,17 @@ async function togglePlayed(name){
     loadDay();
 }
 
-// GÓL
+// ADD
 async function addGoal(name){
     const date = document.getElementById("date").value;
-    if(!date) return;
-
     const ref = db.collection("matches").doc(date);
     const doc = await ref.get();
 
     const data = doc.exists ? doc.data() : {};
-    
-    // Načteme stará data hráče, nebo vytvoříme základní strukturu
     const current = data[name] || { goals: 0, played: true };
 
-    // Uložíme data POD JMÉNEM HRÁČE s využitím [name]
     await ref.set({
-        [name]: {
+        {
             goals: current.goals + 1,
             played: true
         }
@@ -183,6 +198,77 @@ async function addGoal(name){
     loadDay();
 }
 
+// REMOVE
+async function removeGoal(name){
+    const date = document.getElementById("date").value;
+    const ref = db.collection("matches").doc(date);
+    const doc = await ref.get();
+
+    const data = doc.exists ? doc.data() : {};
+    const current = data[name] || { goals: 0, played: true };
+
+    const newGoals = Math.max(0, current.goals - 1);
+
+    await ref.set({
+        {
+            goals: newGoals,
+            played: true
+        }
+    }, { merge: true });
+
+    loadDay();
+}
+
+// LEADERBOARD
+async function loadLeaderboard(){
+    const year = document.getElementById("yearSelect").value;
+    const snap = await db.collection("matches").get();
+
+    const stats = {};
+    names.forEach(n=>stats[n]=0);
+
+    snap.forEach(doc=>{
+        if(doc.id.startsWith(year)){
+            const data = doc.data();
+            names.forEach(n=>{
+                if(data[n]?.played){ stats[n]++; }
+            });
+        }
+    });
+
+    let html = "<tr><th>Hráč</th><th>Docházka</th></tr>";
+
+    Object.entries(stats)
+        .sort((a,b)=>b[1]-a[1])
+        .forEach(([n,v])=>{
+            html += `<tr><td>${n}</td><td>${v}</td></tr>`;
+        });
+
+    document.getElementById("leaderboard").innerHTML = html;
+}
+
+// GRAF
+async function drawChart(){
+    const player = document.getElementById("playerSelect").value;
+    const snap = await db.collection("matches").get();
+
+    const values = [];
+
+    snap.forEach(doc=>{
+        const d = doc.data();
+        if(d[player]?.played){
+            values.push(d[player].goals || 0);
+        }
+    });
+
+    const ctx = document.getElementById("chart").getContext("2d");
+    ctx.clearRect(0,0,400,200);
+
+    values.forEach((v,i)=>{
+        ctx.fillStyle="green";
+        ctx.fillRect(i*40, 200 - v*10, 20, v*10);
+    });
+}
 </script>
 
 </body>
