@@ -3,29 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🏒 Florbal Stats</title>
+<title>Florbal Stats</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <style>
-body {
-    font-family: Arial;
-    background: linear-gradient(135deg,#0f2027,#2c5364);
-    color:white;
-    text-align:center;
-}
-.card {
-    background:white;
-    color:#333;
-    margin:20px;
-    padding:20px;
-    border-radius:12px;
-}
+body { font-family: Arial; background:#1e3c47; color:white; text-align:center;}
+.card { background:white; color:black; margin:15px; padding:15px; border-radius:10px;}
 table { width:100%; }
-td, th { padding:8px; }
-.plus { background:green; color:white; }
+td,th { padding:8px; }
+button { padding:5px 10px; }
 </style>
 </head>
 
@@ -57,7 +46,6 @@ td, th { padding:8px; }
 
 <script>
 
-// Firebase config OK
 const firebaseConfig = {
   apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
   authDomain: "florbal-cf3a3.firebaseapp.com",
@@ -66,6 +54,7 @@ const firebaseConfig = {
   messagingSenderId: "931228433806",
   appId: "1:931228433806:web:f837c3e0c11ae747e778df"
 };
+
 
 firebase.initializeApp(firebaseConfig);
 
@@ -79,7 +68,6 @@ function login(){
     auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 }
 
-// PO LOGINU
 auth.onAuthStateChanged(user=>{
     if(user){
         document.getElementById("login").style.display="none";
@@ -87,21 +75,19 @@ auth.onAuthStateChanged(user=>{
     }
 });
 
-// ===== LOAD DAY =====
+// LOAD
 async function loadDay(){
     const date = document.getElementById("date").value;
     if(!date) return;
 
-    const ref = db.collection("matches").doc(date);
-    const doc = await ref.get();
-
+    const doc = await db.collection("matches").doc(date).get();
     const data = doc.exists ? doc.data() : {};
 
     renderAttendance(data);
     renderGoals(data);
 }
 
-// ===== DOCHÁZKA =====
+// DOCHÁZKA
 function renderAttendance(data){
     let html = "<tr><th>Hráč</th><th>Přišel</th></tr>";
 
@@ -111,17 +97,15 @@ function renderAttendance(data){
         html += `
         <tr>
             <td>${n}</td>
-            <td>
-                <input type="checkbox" ${p.played ? "checked":""}
-                onchange="togglePlayed('${n}')">
-            </td>
+            <td><input type="checkbox" ${p.played ? "checked":""}
+                onchange="togglePlayed('${n}')"></td>
         </tr>`;
     });
 
     document.getElementById("attendance").innerHTML = html;
 }
 
-// ===== GÓLY =====
+// GÓLY
 function renderGoals(data){
     let html = "<tr><th>Hráč</th><th>Góly</th><th></th></tr>";
 
@@ -133,7 +117,7 @@ function renderGoals(data){
             <tr>
                 <td>${n}</td>
                 <td>${p.goals || 0}</td>
-                <td><button class="plus" onclick="addGoal('${n}')">+1</button></td>
+                <td><button onclick="addGoal('${n}')">+1</button></td>
             </tr>`;
         }
     });
@@ -141,10 +125,10 @@ function renderGoals(data){
     document.getElementById("goals").innerHTML = html;
 }
 
-// ===== TOGGLE DOCHÁZKY =====
+// TOGGLE
 async function togglePlayed(name){
     const date = document.getElementById("date").value;
-    if(!date) return alert("Vyber datum");
+    if(!date) return;
 
     const ref = db.collection("matches").doc(date);
     const doc = await ref.get();
@@ -153,16 +137,16 @@ async function togglePlayed(name){
     const current = data[name] || {goals:0, played:false};
 
     await ref.set({
-        {
+        [name]: {
             goals: current.goals,
             played: !current.played
         }
     }, { merge:true });
 
-    loadDay(); // 🔥 DŮLEŽITÉ
+    loadDay();
 }
 
-// ===== GÓLY =====
+// GÓL
 async function addGoal(name){
     const date = document.getElementById("date").value;
     if(!date) return;
@@ -174,13 +158,13 @@ async function addGoal(name){
     const current = data[name] || {goals:0, played:true};
 
     await ref.set({
-        {
+        [name]: {
             goals: current.goals + 1,
             played: true
         }
     }, { merge:true });
 
-    loadDay(); // 🔥 DŮLEŽITÉ
+    loadDay();
 }
 
 </script>
