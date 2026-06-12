@@ -68,16 +68,12 @@ button { padding:5px 10px; }
 
 <script>
 
-// 🔴 DOPLŇ TVŮJ CONFIG
+// 🔴 TVŮJ CONFIG (OK jak máš)
 const firebaseConfig = {
   apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
   authDomain: "florbal-cf3a3.firebaseapp.com",
-  projectId: "florbal-cf3a3",
-  storageBucket: "florbal-cf3a3.firebasestorage.app",
-  messagingSenderId: "931228433806",
-  appId: "1:931228433806:web:f837c3e0c11ae747e778df"
+  projectId: "florbal-cf3a3"
 };
-
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -133,7 +129,7 @@ function renderAttendance(data){
     document.getElementById("attendance").innerHTML = html;
 }
 
-// ===== GÓLY (jen přítomní) =====
+// ===== GÓLY =====
 function renderGoals(data){
     let html = "<tr><th>Hráč</th><th>Góly</th><th>Akce</th></tr>";
 
@@ -155,19 +151,10 @@ function renderGoals(data){
     document.getElementById("goals").innerHTML = html;
 }
 
-// ===== ULOŽENÍ =====
-async function savePlayer(name, playerData){
-    const date = document.getElementById("date").value;
-    if(!date) return alert("Vyber datum");
-
-    await db.collection("matches").doc(date).set({
-        [name]: playerData
-    }, { merge:true });
-}
-
-// ===== DOCHÁZKA =====
+// ===== TOGGLE =====
 async function togglePlayed(name){
     const date = document.getElementById("date").value;
+    if(!date) return alert("Vyber datum");
 
     const ref = db.collection("matches").doc(date);
     const doc = await ref.get();
@@ -176,7 +163,7 @@ async function togglePlayed(name){
     const current = data[name] || {goals:0, played:false};
 
     await ref.set({
-        [name]: {
+        {
             goals: current.goals,
             played: !current.played
         }
@@ -186,9 +173,10 @@ async function togglePlayed(name){
     loadLeaderboard();
 }
 
-// ===== GÓLY =====
+// ===== ADD GOAL =====
 async function addGoal(name){
     const date = document.getElementById("date").value;
+    if(!date) return alert("Vyber datum");
 
     const ref = db.collection("matches").doc(date);
     const doc = await ref.get();
