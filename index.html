@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>🏒 Florbal Stats</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
@@ -27,7 +27,7 @@ body {
 table {
     width:100%;
 }
-td {
+td, th {
     padding:8px;
 }
 button { padding:5px 10px; }
@@ -64,17 +64,11 @@ button { padding:5px 10px; }
     <div id="leaderboard"></div>
 </div>
 
-<div class="card">
-    <h3>Graf hráče</h3>
-    <select id="playerSelect" onchange="renderChart()"></select>
-    <canvas id="chart"></canvas>
-</div>
-
 </div>
 
 <script>
 
-// 🔴 DOPLŇ
+// 🔴 DOPLŇ TVŮJ CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
   authDomain: "florbal-cf3a3.firebaseapp.com",
@@ -100,27 +94,25 @@ auth.onAuthStateChanged(user=>{
     if(user){
         document.getElementById("login").style.display="none";
         document.getElementById("app").style.display="block";
-        renderEmptyTables();
+
+        renderAttendance({});
+        renderGoals({});
         loadLeaderboard();
     }
 });
 
-// ===== RENDER EMPTY TABLES =====
-function renderEmptyTables(){
-    renderAttendance({});
-    renderGoals({});
-}
-
 // ===== LOAD DAY =====
+let currentData = {};
+
 async function loadDay(){
     const date = document.getElementById("date").value;
     if(!date) return;
 
     const doc = await db.collection("matches").doc(date).get();
-    const data = doc.exists ? doc.data() : {};
+    currentData = doc.exists ? doc.data() : {};
 
-    renderAttendance(data);
-    renderGoals(data);
+    renderAttendance(currentData);
+    renderGoals(currentData);
 }
 
 // ===== DOCHÁZKA =====
@@ -143,65 +135,62 @@ function renderAttendance(data){
     document.getElementById("attendance").innerHTML = html;
 }
 
-// ===== GÓLY =====
+// ===== GÓLY (jen přítomní) =====
 function renderGoals(data){
     let html = "<tr><th>Hráč</th><th>Góly</th><th>Akce</th></tr>";
 
     names.forEach(n=>{
-        const p = data[n] || {goals:0};
+        const p = data[n];
 
-        html += `
-        <tr>
-            <td>${n}</td>
-            <td>${p.goals || 0}</td>
-            <td>
-                <button class="plus" onclick="addGoal('${n}')">+1</button>
-            </td>
-        </tr>`;
+        if(p?.played){
+            html += `
+            <tr>
+                <td>${n}</td>
+                <td>${p.goals || 0}</td>
+                <td>
+                    <button class="plus" onclick="addGoal('${n}')">+1</button>
+                </td>
+            </tr>`;
+        }
     });
 
     document.getElementById("goals").innerHTML = html;
 }
 
-// ===== SAVE PLAYER =====
-async function savePlayer(name, newData){
+// ===== ULOŽENÍ =====
+async function savePlayer(name, playerData){
     const date = document.getElementById("date").value;
     if(!date) return alert("Vyber datum");
 
-    const ref = db.collection("matches").doc(date);
-
-    await ref.set({
-        [name]: newData
+    await db.collection("matches").doc(date).set({
+        [name]: playerData
     }, { merge:true });
+}
+
+// ===== DOCHÁZKA =====
+async function togglePlayed(name){
+    const current = currentData[name] || {goals:0, played:false};
+
+    await savePlayer(name, {
+        goals: current.goals || 0,
+        played: !current.played
+    });
 
     loadDay();
     loadLeaderboard();
 }
 
-// ===== TOGGLE =====
-async function togglePlayed(name){
-    const date = document.getElementById("date").value;
-    const doc = await db.collection("matches").doc(date).get();
-
-    const current = doc.data()?.[name] || {goals:0, played:false};
-
-    savePlayer(name, {
-        goals: current.goals,
-        played: !current.played
-    });
-}
-
-// ===== GOALS =====
+// ===== GÓLY =====
 async function addGoal(name){
-    const date = document.getElementById("date").value;
-    const doc = await db.collection("matches").doc(date).get();
+    const current = currentData[name] || {goals:0, played:true};
 
-    const current = doc.data()?.[name] || {goals:0, played:true};
-
-    savePlayer(name, {
-        goals: current.goals + 1,
+    await savePlayer(name, {
+        goals: (current.goals || 0) + 1,
         played: true
     });
+
+    loadDay();
+    loadLeaderboard();
 }
 
 // ===== LEADERBOARD =====
@@ -220,10 +209,9 @@ async function loadLeaderboard(){
         const d = doc.data();
 
         names.forEach(n=>{
-            const p = d[n];
-            if(p?.played){
+            if(d[n]?.played){
                 matches[n]++;
-                totals[n]+=p.goals || 0;
+                totals[n]+=d[n].goals || 0;
             }
         });
     });
@@ -237,41 +225,6 @@ async function loadLeaderboard(){
     });
 
     document.getElementById("leaderboard").innerHTML = html;
-
-    const select = document.getElementById("playerSelect");
-    select.innerHTML="";
-    sorted.forEach(([n])=>{
-        select.innerHTML+=`<option>${n}</option>`;
-    });
-}
-
-// ===== GRAF =====
-let chart;
-
-async function renderChart(){
-    const player = document.getElementById("playerSelect").value;
-    const snapshot = await db.collection("matches").get();
-
-    let labels=[];
-    let values=[];
-
-    snapshot.forEach(doc=>{
-        labels.push(doc.id);
-        values.push(doc.data()[player]?.goals || 0);
-    });
-
-    if(chart) chart.destroy();
-
-    chart = new Chart(document.getElementById("chart"), {
-        type:"line",
-        data:{
-            labels:labels,
-            datasets:[{
-                label:player,
-                data:values
-            }]
-        }
-    });
 }
 
 </script>
