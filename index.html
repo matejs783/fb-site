@@ -72,8 +72,12 @@ button { padding:5px 10px; }
 const firebaseConfig = {
   apiKey: "AIzaSyCSFxJuzRvPOrATyuYpwQWyjLgHow3LXAI",
   authDomain: "florbal-cf3a3.firebaseapp.com",
-  projectId: "florbal-cf3a3"
+  projectId: "florbal-cf3a3",
+  storageBucket: "florbal-cf3a3.firebasestorage.app",
+  messagingSenderId: "931228433806",
+  appId: "1:931228433806:web:f837c3e0c11ae747e778df"
 };
+
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -154,7 +158,7 @@ function renderGoals(data){
 // ===== TOGGLE =====
 async function togglePlayed(name){
     const date = document.getElementById("date").value;
-    if(!date) return alert("Vyber datum");
+    if(!date) return;
 
     const ref = db.collection("matches").doc(date);
     const doc = await ref.get();
@@ -163,7 +167,7 @@ async function togglePlayed(name){
     const current = data[name] || {goals:0, played:false};
 
     await ref.set({
-        {
+        [name]: {
             goals: current.goals,
             played: !current.played
         }
@@ -172,11 +176,10 @@ async function togglePlayed(name){
     loadDay();
     loadLeaderboard();
 }
-
 // ===== ADD GOAL =====
 async function addGoal(name){
     const date = document.getElementById("date").value;
-    if(!date) return alert("Vyber datum");
+    if(!date) return;
 
     const ref = db.collection("matches").doc(date);
     const doc = await ref.get();
@@ -185,7 +188,7 @@ async function addGoal(name){
     const current = data[name] || {goals:0, played:true};
 
     await ref.set({
-        {
+        [name]: {
             goals: current.goals + 1,
             played: true
         }
