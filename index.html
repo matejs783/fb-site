@@ -21,7 +21,7 @@ button { padding:5px 10px; }
 <body>
 
 <h1>🏒 Florbal Stats</h1>
-<h2>verze 1.1</h2>
+<h2>verze 1.2</h2>
 <div id="login">
     <button onclick="login()">Přihlásit přes Google</button>
 </div>
@@ -56,6 +56,7 @@ const firebaseConfig = {
 };
 
 
+
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
@@ -74,7 +75,7 @@ auth.onAuthStateChanged(user=>{
         document.getElementById("app").style.display="block";
 
         // ✅ nastav dnešní datum + načti data
-        const today = new Date().toISOString().split("T")[0];
+       const today = new Date().toLocaleDateString('en-CA');
         document.getElementById("date").value = today;
 
         loadDay();
@@ -95,46 +96,45 @@ async function loadDay(){
 
 // DOCHÁZKA
 function renderAttendance(data){
-    console.log("renderAttendance START");
-
     const table = document.getElementById("attendance");
-
-    if (!table) {
-        console.error("TABLE NOT FOUND");
-        return;
-    }
 
     let html = "<tr><th>Hráč</th><th>Přišel</th></tr>";
 
-    for (let i = 0; i < names.length; i++) {
-        html += "<tr><td>" + names[i] + "</td><td><input type='checkbox'></td></tr>";
-    }
+    names.forEach(name => {
+        const p = data[name] || { goals: 0, played: false };
+
+        html += `
+        <tr>
+            <td>${name}</td>
+            <td>
+                <input type="checkbox"
+                    ${p.played ? "checked" : ""}
+                    onchange="togglePlayed('${name}')">
+            </td>
+        </tr>`;
+    });
 
     table.innerHTML = html;
-
-    console.log("renderAttendance DONE");
 }
 
 
 // GÓLY
 function renderGoals(data){
     const table = document.getElementById("goals");
-    if(!table){
-        console.error("goals table not found");
-        return;
-    }
 
     let html = "<tr><th>Hráč</th><th>Góly</th><th></th></tr>";
 
-    names.forEach(n=>{
-        const p = data[n];
+    names.forEach(name => {
+        const p = data[name];
 
-        if(p && p.played){
+        if (p && p.played) {
             html += `
             <tr>
-                <td>${n}</td>
+                <td>${name}</td>
                 <td>${p.goals || 0}</td>
-                <td><button onclick="addGoal('${n}')">+1</button></td>
+                <td>
+                    <button onclick="addGoal('${name}')">+1</button>
+                </td>
             </tr>`;
         }
     });
@@ -172,10 +172,10 @@ async function addGoal(name){
     const doc = await ref.get();
 
     const data = doc.exists ? doc.data() : {};
-    const current = data[name] || {goals:0, played:true};
+    const current = data[name] || { goals: 0, played: true };
 
     await ref.set({
-        [name]: {
+        {
             goals: current.goals + 1,
             played: true
         }
