@@ -212,23 +212,23 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 2px;
-    max-width: 280px;
+    max-width: 360px;
     margin: 0 auto;
   }
   .cal-dow {
     text-align: center;
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
     color: rgba(255,255,255,0.3);
-    padding-bottom: 4px;
+    padding-bottom: 6px;
   }
   .cal-day {
     text-align: center;
-    padding: 3px 1px;
-    border-radius: 5px;
-    font-size: 0.75rem;
+    padding: 5px 2px;
+    border-radius: 6px;
+    font-size: 0.85rem;
     cursor: pointer;
     color: rgba(255,255,255,0.65);
     transition: background 0.12s, color 0.12s;
@@ -258,20 +258,14 @@
   }
   .cal-day.selected::after { background: rgba(255,255,255,0.6); }
   .cal-day.today-marker { border: 1px solid rgba(29,158,117,0.4); }
-  .cal-selected-label {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(29,158,117,0.15);
-    font-size: 0.75rem;
-    color: rgba(255,255,255,0.4);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    max-width: 280px;
+  /* Date shown in card header */
+  .cal-header-date {
     margin-left: auto;
-    margin-right: auto;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #9FE1CB;
+    white-space: nowrap;
   }
-  .cal-selected-label span { color: #9FE1CB; font-weight: 600; }
 
   /* TABLES */
   table { width: 100%; border-collapse: collapse; }
@@ -437,7 +431,7 @@
 
 <header>
   <h1><i class="ti ti-ball-football" aria-hidden="true"></i> Florbal Stats</h1>
-  <div class="version">verze 2.5</div>
+  <div class="version">verze 2.6</div>
 </header>
 
 <div id="login">
@@ -462,6 +456,7 @@
         <div class="card-header">
           <i class="ti ti-calendar" aria-hidden="true"></i>
           <h3>Datum tréninku</h3>
+          <span id="calSelectedLabel" class="cal-header-date">—</span>
         </div>
         <div class="cal-nav">
           <button onclick="calPrev()" aria-label="Předchozí měsíc"><i class="ti ti-chevron-left"></i></button>
@@ -469,10 +464,6 @@
           <button onclick="calNext()" aria-label="Další měsíc"><i class="ti ti-chevron-right"></i></button>
         </div>
         <div class="cal-grid" id="calGrid"></div>
-        <div class="cal-selected-label">
-          <i class="ti ti-calendar-event" style="font-size:12px" aria-hidden="true"></i>
-          <span id="calSelectedLabel">—</span>
-        </div>
         <input type="hidden" id="date">
       </div>
     </div>
@@ -570,7 +561,7 @@ function updateCalLabel() {
   const el = document.getElementById("calSelectedLabel");
   if(!calSelected){ el.textContent = "—"; return; }
   const d = new Date(calSelected + "T00:00:00");
-  el.textContent = d.toLocaleDateString('cs-CZ', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  el.textContent = d.toLocaleDateString('cs-CZ', {weekday:'short', day:'numeric', month:'long'});
 }
 
 function renderCal() {
@@ -607,7 +598,7 @@ async function loadDatesWithData() {
   calDatesWithData = new Set();
   snapshot.forEach(doc => {
     const data = doc.data();
-    const hasAttendance = Object.values(data).some(p => p && typeof p === 'object' && p.played === true);
+    const hasAttendance = Object.values(data).some(p => p !== null && typeof p === 'object' && !Array.isArray(p) && p.played === true);
     if(hasAttendance) calDatesWithData.add(doc.id);
   });
   renderCal();
