@@ -103,6 +103,22 @@
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
 
+  /* main layout: calendar (40%) | attendance+goals (60%) */
+  .grid-main {
+    display: grid;
+    grid-template-columns: 40% 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: start;
+  }
+  .right-col { display: flex; flex-direction: column; gap: 1rem; }
+  .grid-top { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; align-items: start; }
+  @media (max-width: 800px) {
+    .grid-main { grid-template-columns: 1fr; }
+    .grid-top { grid-template-columns: 1fr; }
+  }
+  .cal-card { margin-bottom: 0; }
+
   /* CARDS */
   .card {
     background: #0f2847;
@@ -247,7 +263,10 @@
   }
   #goals td {
     padding: 0.7rem 0.5rem;
+    font-size: 1rem;
   }
+  #goals .player-cell { gap: 12px; font-size: 1rem; font-weight: 500; }
+  #goals .avatar { width: 36px; height: 36px; font-size: 0.8rem; }
   tbody tr:hover { background: rgba(29,158,117,0.05); border-radius: 8px; }
   tbody tr:last-child td { border-bottom: none; }
 
@@ -387,7 +406,7 @@
 
 <header>
   <h1><i class="ti ti-ball-football" aria-hidden="true"></i> Florbal Stats</h1>
-  <div class="version">verze 2.1</div>
+  <div class="version">verze 2.2</div>
 </header>
 
 <div id="login">
@@ -404,25 +423,27 @@
 
 <div id="app">
 
-  <div class="card">
-    <div class="card-header">
-      <i class="ti ti-calendar" aria-hidden="true"></i>
-      <h3>Vyberte datum tréninku</h3>
+  <div class="grid-main">
+    <div class="card cal-card">
+      <div class="card-header">
+        <i class="ti ti-calendar" aria-hidden="true"></i>
+        <h3>Datum tréninku</h3>
+      </div>
+      <div class="cal-nav">
+        <button onclick="calPrev()" aria-label="Předchozí měsíc"><i class="ti ti-chevron-left"></i></button>
+        <span class="cal-title" id="calTitle"></span>
+        <button onclick="calNext()" aria-label="Další měsíc"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-selected-label">
+        <i class="ti ti-calendar-event" style="font-size:12px" aria-hidden="true"></i>
+        <span id="calSelectedLabel">—</span>
+      </div>
+      <input type="hidden" id="date">
     </div>
-    <div class="cal-nav">
-      <button onclick="calPrev()" aria-label="Předchozí měsíc"><i class="ti ti-chevron-left"></i></button>
-      <span class="cal-title" id="calTitle"></span>
-      <button onclick="calNext()" aria-label="Další měsíc"><i class="ti ti-chevron-right"></i></button>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-selected-label">
-      <i class="ti ti-calendar-event" style="font-size:14px" aria-hidden="true"></i>
-      Vybrané datum: <span id="calSelectedLabel">—</span>
-    </div>
-    <input type="hidden" id="date">
-  </div>
 
-  <div class="grid-2">
+    <div class="right-col">
+      <div class="grid-top">
     <div class="card">
       <div class="card-header">
         <i class="ti ti-users" aria-hidden="true"></i>
@@ -438,7 +459,9 @@
       </div>
       <table id="goals"></table>
     </div>
-  </div>
+    </div><!-- /grid-top -->
+    </div><!-- /right-col -->
+  </div><!-- /grid-main -->
 
   <div class="grid-2">
     <div class="card">
@@ -544,7 +567,7 @@ async function loadDatesWithData() {
   calDatesWithData = new Set();
   snapshot.forEach(doc => {
     const data = doc.data();
-    const hasAttendance = Object.values(data).some(p => p?.played === true);
+    const hasAttendance = Object.values(data).some(p => p && typeof p === 'object' && p.played === true);
     if(hasAttendance) calDatesWithData.add(doc.id);
   });
   renderCal();
@@ -641,9 +664,18 @@ async function togglePlayed(name){
   const doc = await ref.get();
   const data = doc.exists ? doc.data() : {};
   const current = data[name] || {goals:0, played:false};
-  await ref.set({ [name]: { goals: current.goals, played: !current.played } }, {merge:true});
-  await loadDatesWithData();
+  const newPlayed = !current.played;
+  await ref.set({ [name]: { goals: current.goals, played: newPlayed } }, {merge:true});
+  // optimistic local update
+  if(newPlayed) calDatesWithData.add(date); else {
+    // recheck if anyone else still played
+    const check = await ref.get();
+    const d2 = check.exists ? check.data() : {};
+    if(!Object.values(d2).some(p => p && p.played === true)) calDatesWithData.delete(date);
+  }
+  renderCal();
   loadDay();
+  drawChart();
 }
 
 async function addGoal(name){
@@ -653,8 +685,10 @@ async function addGoal(name){
   const doc = await ref.get();
   const data = doc.exists ? doc.data() : {};
   const current = data[name] || {goals:0, played:true};
-  await ref.set({ [name]: { goals: current.goals+1, played:true } }, {merge:true});
+  const newGoals = current.goals + 1;
+  await ref.set({ [name]: { goals: newGoals, played:true } }, {merge:true});
   loadDay();
+  if(document.getElementById("playerSelect").value === name) drawChart();
 }
 
 async function removeGoal(name){
@@ -666,6 +700,7 @@ async function removeGoal(name){
   const current = data[name] || {goals:0, played:true};
   await ref.set({ [name]: { goals: Math.max(0, current.goals-1), played:true } }, {merge:true});
   loadDay();
+  if(document.getElementById("playerSelect").value === name) drawChart();
 }
 
 function initPlayers(){
