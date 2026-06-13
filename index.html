@@ -110,7 +110,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1fr auto;
-    gap: 1rem;
+    gap: 1.25rem;
     align-items: stretch;
   }
   .area-cal        { grid-column: 1; grid-row: 1; }
@@ -118,17 +118,18 @@
   .area-goals      { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; }
   .area-bottom     { grid-column: 1 / 3; grid-row: 3; }
 
-  /* Goals card fills full height of its grid area */
+  /* Goals card fills height but aligns content to top */
   .area-goals .card {
     flex: 1;
     display: flex;
     flex-direction: column;
     margin-bottom: 0;
   }
-  .area-goals .card table { flex: 1; }
+  /* Table inside goals does NOT flex-stretch – content stays at top */
+  .area-goals .card table { flex: 0 0 auto; }
 
   /* Bottom row: leaderboard + graf side by side */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
 
   @media (max-width: 800px) {
     .layout-cols {
@@ -142,6 +143,12 @@
     .grid-2          { grid-template-columns: 1fr; }
   }
   .cal-card { margin-bottom: 0; }
+  /* Remove bottom margin from all direct area children so gap controls spacing */
+  .area-cal .card,
+  .area-attendance .card,
+  .area-goals .card,
+  .area-bottom .card,
+  .grid-2 .card { margin-bottom: 0; }
 
   /* CARDS */
   .card {
@@ -430,7 +437,7 @@
 
 <header>
   <h1><i class="ti ti-ball-football" aria-hidden="true"></i> Florbal Stats</h1>
-  <div class="version">verze 2.4</div>
+  <div class="version">verze 2.5</div>
 </header>
 
 <div id="login">
