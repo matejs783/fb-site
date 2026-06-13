@@ -138,16 +138,19 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.5rem;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
   }
   .cal-nav button {
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(29,158,117,0.25);
-    border-radius: 7px;
+    border-radius: 6px;
     color: #e8f5f1;
-    width: 32px; height: 32px;
+    width: 26px; height: 26px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.85rem;
     display: flex; align-items: center; justify-content: center;
     transition: background 0.15s;
   }
@@ -161,27 +164,30 @@
   .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
+    gap: 2px;
+    max-width: 280px;
+    margin: 0 auto;
   }
   .cal-dow {
     text-align: center;
-    font-size: 0.68rem;
+    font-size: 0.6rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
     color: rgba(255,255,255,0.3);
-    padding-bottom: 6px;
+    padding-bottom: 4px;
   }
   .cal-day {
     text-align: center;
-    padding: 5px 2px;
-    border-radius: 7px;
-    font-size: 0.85rem;
+    padding: 3px 1px;
+    border-radius: 5px;
+    font-size: 0.75rem;
     cursor: pointer;
     color: rgba(255,255,255,0.65);
     transition: background 0.12s, color 0.12s;
     position: relative;
     user-select: none;
+    line-height: 1.6;
   }
   .cal-day:hover { background: rgba(29,158,117,0.15); color: #e8f5f1; }
   .cal-day.empty { cursor: default; }
@@ -193,10 +199,10 @@
   .cal-day.has-data::after {
     content: '';
     display: block;
-    width: 4px; height: 4px;
+    width: 3px; height: 3px;
     border-radius: 50%;
     background: #1D9E75;
-    margin: 2px auto 0;
+    margin: 1px auto 0;
   }
   .cal-day.selected {
     background: #1D9E75 !important;
@@ -206,14 +212,17 @@
   .cal-day.selected::after { background: rgba(255,255,255,0.6); }
   .cal-day.today-marker { border: 1px solid rgba(29,158,117,0.4); }
   .cal-selected-label {
-    margin-top: 0.85rem;
-    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
     border-top: 1px solid rgba(29,158,117,0.15);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: rgba(255,255,255,0.4);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
   }
   .cal-selected-label span { color: #9FE1CB; font-weight: 600; }
 
@@ -235,6 +244,9 @@
     font-size: 0.9rem;
     color: #dce9e4;
     border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  #goals td {
+    padding: 0.7rem 0.5rem;
   }
   tbody tr:hover { background: rgba(29,158,117,0.05); border-radius: 8px; }
   tbody tr:last-child td { border-bottom: none; }
@@ -296,14 +308,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
   }
   .goal-btn {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     border: none;
-    border-radius: 7px;
-    font-size: 1rem;
+    border-radius: 10px;
+    font-size: 1.4rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
@@ -311,16 +323,17 @@
     justify-content: center;
     transition: transform 0.1s, opacity 0.15s;
     line-height: 1;
+    touch-action: manipulation;
   }
-  .goal-btn:active { transform: scale(0.9); }
+  .goal-btn:active { transform: scale(0.88); }
   .goal-btn.minus { background: rgba(226,75,74,0.18); color: #E24B4A; border: 1px solid rgba(226,75,74,0.3); }
   .goal-btn.minus:hover { background: rgba(226,75,74,0.28); }
   .goal-btn.plus  { background: rgba(29,158,117,0.18); color: #1D9E75; border: 1px solid rgba(29,158,117,0.35); }
   .goal-btn.plus:hover  { background: rgba(29,158,117,0.28); }
   .goal-count {
-    font-size: 1rem;
+    font-size: 1.4rem;
     font-weight: 700;
-    min-width: 22px;
+    min-width: 32px;
     text-align: center;
     color: #e8f5f1;
   }
@@ -374,7 +387,7 @@
 
 <header>
   <h1><i class="ti ti-ball-football" aria-hidden="true"></i> Florbal Stats</h1>
-  <div class="version">verze 2.0</div>
+  <div class="version">verze 2.1</div>
 </header>
 
 <div id="login">
@@ -531,7 +544,7 @@ async function loadDatesWithData() {
   calDatesWithData = new Set();
   snapshot.forEach(doc => {
     const data = doc.data();
-    const hasAttendance = Object.values(data).some(p => p?.played);
+    const hasAttendance = Object.values(data).some(p => p?.played === true);
     if(hasAttendance) calDatesWithData.add(doc.id);
   });
   renderCal();
