@@ -414,6 +414,120 @@
     display: block;
   }
 
+  /* NÁHRADNÍK UI */
+  .sub-section {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgba(29,158,117,0.12);
+  }
+  .sub-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 0.65rem;
+  }
+  .sub-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sub-input {
+    flex: 1;
+    min-width: 120px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 8px;
+    color: #e8f5f1;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.88rem;
+    outline: none;
+  }
+  .sub-input:focus { border-color: #1D9E75; }
+  .sub-select {
+    flex: 1;
+    min-width: 130px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 8px;
+    color: #e8f5f1;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.85rem;
+    outline: none;
+    margin-bottom: 0;
+    width: auto;
+  }
+  .sub-btn {
+    background: rgba(29,158,117,0.18);
+    border: 1px solid rgba(29,158,117,0.35);
+    border-radius: 8px;
+    color: #1D9E75;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .sub-btn:hover { background: rgba(29,158,117,0.3); }
+  .sub-btn.remove {
+    background: rgba(226,75,74,0.1);
+    border-color: rgba(226,75,74,0.25);
+    color: #E24B4A;
+    padding: 0.45rem 0.6rem;
+  }
+  .sub-btn.remove:hover { background: rgba(226,75,74,0.22); }
+  .sub-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px dashed rgba(29,158,117,0.35);
+    border-radius: 8px;
+    color: rgba(29,158,117,0.8);
+    padding: 0.4rem 0.85rem;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    margin-top: 4px;
+    width: 100%;
+    justify-content: center;
+  }
+  .sub-add-btn:hover { border-color: #1D9E75; color: #1D9E75; }
+
+  /* HVĚZDIČKY u zodpovědného */
+  .star-badge {
+    color: #f5c842;
+    font-size: 0.85rem;
+    letter-spacing: -1px;
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+
+  /* INDEX TABULKA */
+  .index-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .index-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #1D9E75, #9FE1CB);
+    min-width: 2px;
+    transition: width 0.4s ease;
+  }
+  .index-val {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #9FE1CB;
+    min-width: 38px;
+    text-align: right;
+  }
+
   /* LEADERBOARD SCORE PILL */
   .score-pill {
     display: inline-block;
@@ -431,7 +545,7 @@
 
 <header>
   <h1><i class="ti ti-ball-football" aria-hidden="true"></i> Florbal Stats</h1>
-  <div class="version">verze 2.6</div>
+  <div class="version">verze 2.7</div>
 </header>
 
 <div id="login">
@@ -476,6 +590,15 @@
           <h3>Docházka</h3>
         </div>
         <table id="attendance"></table>
+
+        <!-- NÁHRADNÍCI -->
+        <div class="sub-section">
+          <div class="sub-section-title">Náhradníci pro tento den</div>
+          <div id="subsList"></div>
+          <button class="sub-add-btn" onclick="addSubRow()">
+            <i class="ti ti-plus" style="font-size:0.9rem"></i> Přidat náhradníka
+          </button>
+        </div>
       </div>
     </div>
 
@@ -516,6 +639,19 @@
     </div>
 
   </div><!-- /layout-cols -->
+
+  <!-- INDEX -->
+  <div class="card" style="margin-top:1.25rem;">
+    <div class="card-header">
+      <i class="ti ti-star" aria-hidden="true"></i>
+      <h3>Roční index (docházka × góly)</h3>
+      <select id="indexYearSelect" onchange="loadIndex()" style="margin-left:auto;margin-bottom:0;width:auto;padding:0.3rem 0.6rem;font-size:0.82rem;">
+        <option value="2026">2026</option>
+        <option value="2027">2027</option>
+      </select>
+    </div>
+    <table id="indexTable"></table>
+  </div>
 
 </div>
 
@@ -604,6 +740,148 @@ async function loadDatesWithData() {
   renderCal();
 }
 
+// ── NÁHRADNÍCI ─────────────────────────────────────────────────────────────
+let subsState = []; // [{name, sponsor}]  — jen pro aktuální den, in-memory + Firestore
+
+function addSubRow(name='', sponsor='') {
+  subsState.push({name, sponsor});
+  renderSubsList();
+}
+
+function removeSubRow(i) {
+  subsState.splice(i, 1);
+  renderSubsList();
+  saveSubstitutes();
+  renderAttendanceStars();
+}
+
+function renderSubsList() {
+  const container = document.getElementById("subsList");
+  if(!container) return;
+  let html = '';
+  subsState.forEach((s, i) => {
+    const stars = subsState.filter(x => x.sponsor === s.sponsor && s.sponsor).length;
+    const starStr = '★'.repeat(Math.max(0, stars));
+    html += `<div class="sub-row" id="subrow-${i}">
+      <input class="sub-input" placeholder="Jméno náhradníka" value="${s.name}"
+        oninput="subsState[${i}].name=this.value"
+        onblur="saveSubstitutes()">
+      <select class="sub-select" onchange="subsState[${i}].sponsor=this.value;saveSubstitutes();renderAttendanceStars();renderSubsList()">
+        <option value="">— Pozval —</option>
+        ${names.map(n => `<option value="${n}" ${s.sponsor===n?'selected':''}>${n}</option>`).join('')}
+      </select>
+      <button class="sub-btn remove" onclick="removeSubRow(${i})" title="Odebrat">✕</button>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderAttendanceStars() {
+  // Count stars per sponsor
+  const starCount = {};
+  subsState.forEach(s => {
+    if(s.sponsor) starCount[s.sponsor] = (starCount[s.sponsor]||0) + 1;
+  });
+  // Update DOM – find player-cell in attendance table
+  const rows = document.querySelectorAll('#attendance tbody tr');
+  rows.forEach(row => {
+    const nameEl = row.querySelector('.player-cell');
+    if(!nameEl) return;
+    const name = nameEl.textContent.trim().replace(/★+/, '').trim();
+    // Remove old stars
+    const oldStar = nameEl.querySelector('.star-badge');
+    if(oldStar) oldStar.remove();
+    if(starCount[name]) {
+      const span = document.createElement('span');
+      span.className = 'star-badge';
+      span.textContent = '★'.repeat(starCount[name]);
+      nameEl.appendChild(span);
+    }
+  });
+}
+
+async function saveSubstitutes() {
+  const date = document.getElementById("date").value;
+  if(!date) return;
+  const ref = db.collection("matches").doc(date);
+  await ref.set({ _substitutes: subsState }, {merge:true});
+}
+
+async function loadSubstitutes() {
+  subsState = [];
+  const date = document.getElementById("date").value;
+  if(!date) return;
+  const doc = await db.collection("matches").doc(date).get();
+  if(doc.exists && doc.data()._substitutes) {
+    subsState = doc.data()._substitutes;
+  }
+  renderSubsList();
+  renderAttendanceStars();
+}
+
+// ── INDEX ────────────────────────────────────────────────────────────────────
+async function loadIndex() {
+  const year = document.getElementById("indexYearSelect").value;
+  const snapshot = await db.collection("matches").get();
+
+  const attendance = {}, goals = {};
+  names.forEach(n => { attendance[n] = 0; goals[n] = 0; });
+
+  snapshot.forEach(doc => {
+    if(!doc.id.startsWith(year)) return;
+    const data = doc.data();
+    names.forEach(n => {
+      if(data[n]?.played) {
+        attendance[n]++;
+        goals[n] += data[n].goals || 0;
+      }
+    });
+  });
+
+  // Normalize to 0–1 then combine 60% attendance + 40% goals
+  const maxA = Math.max(...Object.values(attendance), 1);
+  const maxG = Math.max(...Object.values(goals), 1);
+
+  const indexed = names.map(n => ({
+    name: n,
+    att: attendance[n],
+    goals: goals[n],
+    index: Math.round(((attendance[n]/maxA)*0.6 + (goals[n]/maxG)*0.4) * 100)
+  })).sort((a,b) => b.index - a.index);
+
+  const maxIdx = indexed[0]?.index || 1;
+
+  let html = `<thead><tr>
+    <th>#</th><th>Hráč</th>
+    <th style="text-align:center">Docházka</th>
+    <th style="text-align:center">Góly</th>
+    <th>Index</th>
+  </tr></thead><tbody>`;
+
+  indexed.forEach(({name, att, goals: g, index}, i) => {
+    const rank = i+1;
+    const rankClass = rank<=3 ? `rank rank-${rank}` : '';
+    const rankLabel = rank<=3 ? ['🥇','🥈','🥉'][i] : rank;
+    const barW = Math.round((index/maxIdx)*120);
+    html += `<tr>
+      <td><span class="${rankClass}">${rankLabel}</span></td>
+      <td><div class="player-cell">
+        <div class="avatar">${initials(name)}</div>${name}
+      </div></td>
+      <td style="text-align:center"><span class="score-pill">${att}</span></td>
+      <td style="text-align:center"><span class="score-pill">${g}</span></td>
+      <td>
+        <div class="index-bar-wrap">
+          <div class="index-bar" style="width:${barW}px"></div>
+          <span class="index-val">${index}</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  document.getElementById("indexTable").innerHTML = html;
+}
+
 const names = ["Dan Mikeš","Dan Hakulín","Radim Hladík","Michal Špinka","Jakub Myšák","Vojta Lakomý","Tonda Lakomý","Matěj Svobodník","Jonáš Březina","Dan Horyna","Tim Poláček","Adam Hošek"];
 
 function initials(name) {
@@ -624,6 +902,7 @@ auth.onAuthStateChanged(user => {
     updateCalLabel();
     initPlayers();
     loadLeaderboard();
+    loadIndex();
     loadDatesWithData();
     loadDay();
     drawChart();
@@ -637,6 +916,7 @@ async function loadDay(){
   const data = doc.exists ? doc.data() : {};
   renderAttendance(data);
   renderGoals(data);
+  loadSubstitutes();
 }
 
 function renderAttendance(data){
@@ -656,6 +936,8 @@ function renderAttendance(data){
   });
   html += `</tbody>`;
   table.innerHTML = html;
+  // Re-apply stars after re-render
+  setTimeout(renderAttendanceStars, 0);
 }
 
 function renderGoals(data){
@@ -708,6 +990,7 @@ async function togglePlayed(name){
   loadDay();
   drawChart();
   loadLeaderboard();
+  loadIndex();
 }
 
 async function addGoal(name){
@@ -719,8 +1002,12 @@ async function addGoal(name){
   const current = data[name] || {goals:0, played:true};
   const newGoals = current.goals + 1;
   await ref.set({ [name]: { goals: newGoals, played:true } }, {merge:true});
+  // Auto-select this player in chart dropdown
+  const sel = document.getElementById("playerSelect");
+  if(sel) sel.value = name;
   loadDay();
-  if(document.getElementById("playerSelect").value === name) drawChart();
+  drawChart();
+  loadIndex();
 }
 
 async function removeGoal(name){
@@ -731,8 +1018,11 @@ async function removeGoal(name){
   const data = doc.exists ? doc.data() : {};
   const current = data[name] || {goals:0, played:true};
   await ref.set({ [name]: { goals: Math.max(0, current.goals-1), played:true } }, {merge:true});
+  const sel = document.getElementById("playerSelect");
+  if(sel) sel.value = name;
   loadDay();
-  if(document.getElementById("playerSelect").value === name) drawChart();
+  drawChart();
+  loadIndex();
 }
 
 function initPlayers(){
