@@ -508,24 +508,21 @@
   }
 
   /* INDEX TABULKA */
-  .index-bar-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .index-bar {
-    height: 8px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #1D9E75, #9FE1CB);
-    min-width: 2px;
-    transition: width 0.4s ease;
-  }
   .index-val {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: #9FE1CB;
-    min-width: 38px;
-    text-align: right;
+  }
+  #indexTable {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+  #indexTable thead, #indexTable tbody { display: table; width: 100%; table-layout: fixed; }
+  @media (max-width: 500px) {
+    #indexTable th, #indexTable td { padding: 0.4rem 0.25rem; font-size: 0.78rem; }
+    #indexTable .avatar { width: 24px; height: 24px; font-size: 0.6rem; }
+    #indexTable .player-cell { gap: 6px; }
   }
 
   /* LEADERBOARD SCORE PILL */
@@ -545,7 +542,7 @@
 
 <header>
   <h1><i class="ti ti-ball-football" aria-hidden="true"></i> Florbal Stats</h1>
-  <div class="version">verze 2.7</div>
+  <div class="version">verze 2.8</div>
 </header>
 
 <div id="login">
@@ -849,8 +846,6 @@ async function loadIndex() {
     index: Math.round(((attendance[n]/maxA)*0.6 + (goals[n]/maxG)*0.4) * 100)
   })).sort((a,b) => b.index - a.index);
 
-  const maxIdx = indexed[0]?.index || 1;
-
   let html = `<thead><tr>
     <th>#</th><th>Hráč</th>
     <th style="text-align:center">Docházka</th>
@@ -862,7 +857,6 @@ async function loadIndex() {
     const rank = i+1;
     const rankClass = rank<=3 ? `rank rank-${rank}` : '';
     const rankLabel = rank<=3 ? ['🥇','🥈','🥉'][i] : rank;
-    const barW = Math.round((index/maxIdx)*120);
     html += `<tr>
       <td><span class="${rankClass}">${rankLabel}</span></td>
       <td><div class="player-cell">
@@ -870,12 +864,7 @@ async function loadIndex() {
       </div></td>
       <td style="text-align:center"><span class="score-pill">${att}</span></td>
       <td style="text-align:center"><span class="score-pill">${g}</span></td>
-      <td>
-        <div class="index-bar-wrap">
-          <div class="index-bar" style="width:${barW}px"></div>
-          <span class="index-val">${index}</span>
-        </div>
-      </td>
+      <td style="text-align:center"><span class="index-val">${index}</span></td>
     </tr>`;
   });
   html += '</tbody>';
